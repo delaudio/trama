@@ -171,6 +171,17 @@ button {
   gap: 10px;
 }
 
+.inline-message,
+.workspace-message {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.inline-message.is-error,
+.workspace-message.is-error {
+  color: #9d2f1b;
+}
+
 .project-card {
   padding: 14px;
   border-radius: 20px;
@@ -240,6 +251,10 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) 360px;
   min-height: 0;
+}
+
+.workspace-message {
+  padding: 0 24px 18px;
 }
 
 .canvas-column {

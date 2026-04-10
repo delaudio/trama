@@ -33,6 +33,7 @@ export type ProjectSummary = {
   id: string
   name: string
   template: WorkflowTemplate
+  createdAt: string
   updatedAt: string
   moodboardCount: number
 }

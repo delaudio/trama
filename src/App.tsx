@@ -2,13 +2,19 @@ import { useEffect, useState } from 'react'
 import { getVersion } from '@tauri-apps/api/app'
 import { ProjectSidebar } from './features/projects/ProjectSidebar'
 import { WorkspaceShell } from './features/workspace/WorkspaceShell'
+import { useProjectsStore } from './store/projects-store'
 
 function App() {
   const [appVersion, setAppVersion] = useState<string>('web')
+  const loadProjects = useProjectsStore((state) => state.loadProjects)
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => setAppVersion('web'))
   }, [])
+
+  useEffect(() => {
+    void loadProjects()
+  }, [loadProjects])
 
   return (
     <div className="app-shell">

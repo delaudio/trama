@@ -2,12 +2,56 @@ import { useProjectsStore } from '../../store/projects-store'
 import { WorkflowCanvas } from '../workflow/WorkflowCanvas'
 
 export function WorkspaceShell() {
-  const activeProject = useProjectsStore((state) =>
-    state.projects.find((project) => project.id === state.activeProjectId),
-  )
+  const activeProject = useProjectsStore((state) => state.activeProject)
+  const isLoading = useProjectsStore((state) => state.isLoading)
+  const isSaving = useProjectsStore((state) => state.isSaving)
+  const errorMessage = useProjectsStore((state) => state.errorMessage)
+  const saveActiveProject = useProjectsStore((state) => state.saveActiveProject)
+  const renameActiveProject = useProjectsStore((state) => state.renameActiveProject)
+  const deleteActiveProject = useProjectsStore((state) => state.deleteActiveProject)
+
+  function handleRenameProject() {
+    if (!activeProject) {
+      return
+    }
+
+    const name = window.prompt('Rename project', activeProject.name)
+
+    if (!name?.trim() || name.trim() === activeProject.name) {
+      return
+    }
+
+    void renameActiveProject(name.trim())
+  }
+
+  function handleDeleteProject() {
+    if (!activeProject) {
+      return
+    }
+
+    const shouldDelete = window.confirm(
+      `Delete project "${activeProject.name}"? This cannot be undone.`,
+    )
+
+    if (!shouldDelete) {
+      return
+    }
+
+    void deleteActiveProject()
+  }
 
   if (!activeProject) {
-    return null
+    return (
+      <section className="workspace-shell">
+        <header className="workspace-header">
+          <div>
+            <p className="eyebrow">Current project</p>
+            <h2>No project selected</h2>
+            <p>{isLoading ? 'Loading project workspace...' : 'Create or open a project to begin.'}</p>
+          </div>
+        </header>
+      </section>
+    )
   }
 
   return (
@@ -22,14 +66,26 @@ export function WorkspaceShell() {
         </div>
 
         <div className="workspace-actions">
-          <button className="chip-button" type="button">
-            Save
+          <button className="ghost-button" type="button" onClick={handleRenameProject}>
+            Rename
+          </button>
+          <button className="ghost-button" type="button" onClick={handleDeleteProject}>
+            Delete
+          </button>
+          <button
+            className="chip-button"
+            type="button"
+            onClick={() => void saveActiveProject()}
+          >
+            {isSaving ? 'Saving...' : 'Save'}
           </button>
           <button className="primary-button" type="button">
             Run workflow
           </button>
         </div>
       </header>
+
+      {errorMessage ? <p className="workspace-message is-error">{errorMessage}</p> : null}
 
       <div className="workspace-grid">
         <div className="canvas-column">

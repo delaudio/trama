@@ -24,9 +24,7 @@ const nodeTypes = {
 }
 
 export function WorkflowCanvas() {
-  const activeProject = useProjectsStore((state) =>
-    state.projects.find((project) => project.id === state.activeProjectId),
-  )
+  const activeProject = useProjectsStore((state) => state.activeProject)
 
   if (!activeProject) {
     return null
