@@ -40,6 +40,7 @@ Version 1 focuses on:
 - [MVP](./docs/mvp.md)
 - [Architecture](./docs/architecture.md)
 - [Tasks](./docs/tasks.md)
+- [Contributing](./CONTRIBUTING.md)
 
 ## Repository Setup
 
