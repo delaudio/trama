@@ -1,6 +1,16 @@
 import { create } from 'zustand'
+import {
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
+  type Connection,
+  type EdgeChange,
+  type Node,
+  type NodeChange,
+  type Viewport,
+} from '@xyflow/react'
 import { projectRepository } from '../lib/project-repository'
-import type { Project } from '../types/project'
+import type { Project, WorkflowNodeData } from '../types/project'
 
 type ProjectsState = {
   projects: Project[]
@@ -8,6 +18,7 @@ type ProjectsState = {
   activeProjectId: string
   isLoading: boolean
   isSaving: boolean
+  isDirty: boolean
   errorMessage: string
   loadProjects: () => Promise<void>
   setActiveProject: (projectId: string) => Promise<void>
@@ -15,6 +26,10 @@ type ProjectsState = {
   saveActiveProject: () => Promise<void>
   renameActiveProject: (name: string) => Promise<void>
   deleteActiveProject: () => Promise<void>
+  applyNodeChanges: (changes: NodeChange<Node<WorkflowNodeData>>[]) => void
+  applyEdgeChanges: (changes: EdgeChange[]) => void
+  connectNodes: (connection: Connection) => void
+  setViewport: (viewport: Viewport) => void
 }
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
@@ -23,6 +38,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   activeProjectId: '',
   isLoading: false,
   isSaving: false,
+  isDirty: false,
   errorMessage: '',
   async loadProjects() {
     set({ isLoading: true, errorMessage: '' })
@@ -39,6 +55,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProjectId,
         activeProject,
         isLoading: false,
+        isDirty: false,
       })
     } catch (error) {
       set({
@@ -60,6 +77,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProjectId: projectId,
         activeProject,
         isLoading: false,
+        isDirty: false,
       })
     } catch (error) {
       set({
@@ -80,6 +98,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProjectId: activeProject.id,
         activeProject,
         isLoading: false,
+        isDirty: false,
       })
     } catch (error) {
       set({
@@ -104,6 +123,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject: savedProject,
         projects,
         isSaving: false,
+        isDirty: false,
       })
     } catch (error) {
       set({
@@ -128,6 +148,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject,
         projects,
         isSaving: false,
+        isDirty: false,
       })
     } catch (error) {
       set({
@@ -158,6 +179,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProjectId: fallbackProjectId,
         activeProject,
         isLoading: false,
+        isDirty: false,
       })
     } catch (error) {
       set({
@@ -165,6 +187,88 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         errorMessage: getErrorMessage(error),
       })
     }
+  },
+  applyNodeChanges(changes) {
+    const activeProject = get().activeProject
+
+    if (!activeProject) {
+      return
+    }
+
+    set({
+      activeProject: {
+        ...activeProject,
+        graph: {
+          ...activeProject.graph,
+          nodes: applyNodeChanges<Node<WorkflowNodeData>>(
+            changes,
+            activeProject.graph.nodes,
+          ),
+        },
+      },
+      isDirty: true,
+    })
+  },
+  applyEdgeChanges(changes) {
+    const activeProject = get().activeProject
+
+    if (!activeProject) {
+      return
+    }
+
+    set({
+      activeProject: {
+        ...activeProject,
+        graph: {
+          ...activeProject.graph,
+          edges: applyEdgeChanges(changes, activeProject.graph.edges),
+        },
+      },
+      isDirty: true,
+    })
+  },
+  connectNodes(connection) {
+    const activeProject = get().activeProject
+
+    if (!activeProject || !connection.source || !connection.target) {
+      return
+    }
+
+    set({
+      activeProject: {
+        ...activeProject,
+        graph: {
+          ...activeProject.graph,
+          edges: addEdge(
+            {
+              ...connection,
+              animated: true,
+              style: { stroke: '#8e4d22', strokeWidth: 1.6 },
+            },
+            activeProject.graph.edges,
+          ),
+        },
+      },
+      isDirty: true,
+    })
+  },
+  setViewport(viewport) {
+    const activeProject = get().activeProject
+
+    if (!activeProject) {
+      return
+    }
+
+    set({
+      activeProject: {
+        ...activeProject,
+        graph: {
+          ...activeProject.graph,
+          viewport,
+        },
+      },
+      isDirty: true,
+    })
   },
 }))
 

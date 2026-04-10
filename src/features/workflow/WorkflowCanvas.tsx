@@ -3,8 +3,12 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  type Connection,
   type Node,
+  type NodeChange,
   type NodeProps,
+  type EdgeChange,
+  type Viewport,
 } from '@xyflow/react'
 import { useProjectsStore } from '../../store/projects-store'
 import type { WorkflowNodeData } from '../../types/project'
@@ -25,20 +29,46 @@ const nodeTypes = {
 
 export function WorkflowCanvas() {
   const activeProject = useProjectsStore((state) => state.activeProject)
+  const applyNodeChanges = useProjectsStore((state) => state.applyNodeChanges)
+  const applyEdgeChanges = useProjectsStore((state) => state.applyEdgeChanges)
+  const connectNodes = useProjectsStore((state) => state.connectNodes)
+  const setViewport = useProjectsStore((state) => state.setViewport)
 
   if (!activeProject) {
     return null
   }
 
+  function handleNodeChanges(changes: NodeChange<Node<WorkflowNodeData>>[]) {
+    applyNodeChanges(changes)
+  }
+
+  function handleEdgeChanges(changes: EdgeChange[]) {
+    applyEdgeChanges(changes)
+  }
+
+  function handleConnect(connection: Connection) {
+    connectNodes(connection)
+  }
+
+  function handleMoveEnd(_: MouseEvent | TouchEvent | null, viewport: Viewport) {
+    setViewport(viewport)
+  }
+
   return (
     <div className="workflow-canvas">
       <ReactFlow
+        key={activeProject.id}
         nodes={activeProject.graph.nodes}
         edges={activeProject.graph.edges}
         nodeTypes={nodeTypes}
-        fitView
+        defaultViewport={activeProject.graph.viewport}
         minZoom={0.5}
         maxZoom={1.5}
+        onNodesChange={handleNodeChanges}
+        onEdgesChange={handleEdgeChanges}
+        onConnect={handleConnect}
+        onMoveEnd={handleMoveEnd}
+        fitViewOptions={{ padding: 0.18 }}
         defaultEdgeOptions={{
           animated: true,
           style: { stroke: '#8e4d22', strokeWidth: 1.6 },

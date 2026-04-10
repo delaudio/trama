@@ -5,6 +5,7 @@ export function WorkspaceShell() {
   const activeProject = useProjectsStore((state) => state.activeProject)
   const isLoading = useProjectsStore((state) => state.isLoading)
   const isSaving = useProjectsStore((state) => state.isSaving)
+  const isDirty = useProjectsStore((state) => state.isDirty)
   const errorMessage = useProjectsStore((state) => state.errorMessage)
   const saveActiveProject = useProjectsStore((state) => state.saveActiveProject)
   const renameActiveProject = useProjectsStore((state) => state.renameActiveProject)
@@ -77,7 +78,7 @@ export function WorkspaceShell() {
             type="button"
             onClick={() => void saveActiveProject()}
           >
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? 'Saving...' : isDirty ? 'Save changes' : 'Saved'}
           </button>
           <button className="primary-button" type="button">
             Run workflow
@@ -93,7 +94,7 @@ export function WorkspaceShell() {
             <article className="panel-card">
               <p className="meta-label">Template</p>
               <strong>Beauty Campaign</strong>
-              <p>Opinionated image-first flow for product visuals.</p>
+              <p>{isDirty ? 'Workflow has unsaved changes.' : 'Opinionated image-first flow for product visuals.'}</p>
             </article>
             <article className="panel-card">
               <p className="meta-label">Moodboard</p>
