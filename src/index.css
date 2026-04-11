@@ -442,6 +442,7 @@ button:disabled {
 }
 
 .workflow-canvas {
+  position: relative;
   width: 100%;
   height: 100%;
 }
@@ -464,6 +465,54 @@ button:disabled {
   margin: 0;
   font-size: 0.82rem;
   color: var(--text-muted);
+}
+
+.flow-node-io {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(94, 51, 23, 0.1);
+}
+
+.flow-node-io-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.flow-node-io-label {
+  color: var(--accent-strong);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.workflow-feedback {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.workflow-feedback-error {
+  background: rgba(157, 47, 27, 0.12);
+  border: 1px solid rgba(157, 47, 27, 0.18);
+  color: #8a2414;
+}
+
+.workflow-feedback-dismiss {
+  flex-shrink: 0;
+  padding: 0.48rem 0.8rem;
 }
 
 .side-column {
