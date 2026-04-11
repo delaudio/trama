@@ -48,6 +48,12 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -175,6 +181,67 @@ button {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.project-create-form,
+.project-empty-state,
+.workspace-empty-state,
+.workspace-rename-form {
+  border: 1px solid rgba(82, 55, 33, 0.08);
+  background: rgba(255, 252, 248, 0.72);
+}
+
+.project-create-form,
+.project-empty-state {
+  padding: 14px;
+  border-radius: 22px;
+}
+
+.project-create-form {
+  display: grid;
+  gap: 10px;
+}
+
+.field-label {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.text-input {
+  width: 100%;
+  padding: 0.82rem 0.95rem;
+  border-radius: 16px;
+  border: 1px solid rgba(94, 51, 23, 0.14);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text-main);
+}
+
+.text-input:focus {
+  outline: 2px solid rgba(201, 120, 58, 0.22);
+  border-color: rgba(142, 77, 34, 0.26);
+}
+
+.project-form-actions,
+.workspace-form-actions,
+.workspace-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.project-empty-state h3,
+.workspace-empty-copy h3 {
+  margin: 4px 0 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: 1.45rem;
+}
+
+.project-empty-state p,
+.workspace-empty-copy p {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .inline-message,
@@ -194,6 +261,15 @@ button {
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.46);
   text-align: left;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.project-card:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.64);
 }
 
 .project-card.is-active {
@@ -252,6 +328,22 @@ button {
   background: rgba(255, 252, 248, 0.72);
 }
 
+.workspace-header-empty {
+  border-bottom: 0;
+}
+
+.workspace-rename-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: 22px;
+}
+
+.workspace-title-input {
+  min-width: min(420px, 100%);
+}
+
 .workspace-header p,
 .panel-card p,
 .moodboard-note,
@@ -268,6 +360,34 @@ button {
 
 .workspace-message {
   padding: 0 24px 18px;
+}
+
+.workspace-message-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.workspace-message-warning strong {
+  color: var(--accent-strong);
+}
+
+.workspace-empty-state {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.workspace-empty-copy {
+  max-width: 520px;
+  padding: 28px;
+  border-radius: 28px;
+  text-align: center;
+  background:
+    radial-gradient(circle at top, rgba(244, 197, 89, 0.16), transparent 38%),
+    rgba(255, 252, 248, 0.76);
+  border: 1px solid rgba(82, 55, 33, 0.08);
 }
 
 .canvas-column {
@@ -451,6 +571,11 @@ button {
 
   .side-column {
     padding: 0 18px 18px;
+  }
+
+  .workspace-message-warning {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
