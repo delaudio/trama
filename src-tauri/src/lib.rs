@@ -452,6 +452,9 @@ impl From<&ProjectRecord> for ProjectSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static TEST_WORKSPACE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     struct TestWorkspace {
         root: PathBuf,
@@ -459,7 +462,11 @@ mod tests {
 
     impl TestWorkspace {
         fn new() -> Self {
-            let root = std::env::temp_dir().join(format!("trama-persistence-{}", unique_suffix()));
+            let test_id = TEST_WORKSPACE_COUNTER.fetch_add(1, Ordering::Relaxed);
+            let root = std::env::temp_dir().join(format!(
+                "trama-persistence-{}-{test_id}",
+                unique_suffix()
+            ));
             fs::create_dir_all(&root).expect("create test workspace");
             Self { root }
         }
