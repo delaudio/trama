@@ -227,6 +227,13 @@ button {
   font-size: 0.82rem;
 }
 
+.app-storage-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .main-panel {
   min-width: 0;
 }

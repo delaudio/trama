@@ -10,10 +10,10 @@ import {
   type Viewport,
 } from '@xyflow/react'
 import { projectRepository } from '../lib/project-repository'
-import type { Project, WorkflowNodeData } from '../types/project'
+import type { Project, ProjectSummary, WorkflowNodeData } from '../types/project'
 
 type ProjectsState = {
-  projects: Project[]
+  projects: ProjectSummary[]
   activeProject: Project | null
   activeProjectId: string
   isLoading: boolean
@@ -273,8 +273,20 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 }))
 
 function getErrorMessage(error: unknown) {
+  if (typeof error === 'string') {
+    return error
+  }
+
   if (error instanceof Error) {
     return error.message
+  }
+
+  if (typeof error === 'object' && error && 'message' in error) {
+    const { message } = error
+
+    if (typeof message === 'string') {
+      return message
+    }
   }
 
   return 'Unexpected project error'

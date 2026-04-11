@@ -1,7 +1,11 @@
 import { useProjectsStore } from '../../store/projects-store'
 import { formatProjectUpdatedAt } from '../../lib/project-format'
 
-export function ProjectSidebar() {
+type ProjectSidebarProps = {
+  storageNote: string
+}
+
+export function ProjectSidebar({ storageNote }: ProjectSidebarProps) {
   const projects = useProjectsStore((state) => state.projects)
   const activeProjectId = useProjectsStore((state) => state.activeProjectId)
   const isLoading = useProjectsStore((state) => state.isLoading)
@@ -51,6 +55,8 @@ export function ProjectSidebar() {
           </button>
         ))}
       </div>
+
+      <p className="app-storage-note">{storageNote}</p>
     </section>
   )
 }

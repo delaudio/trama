@@ -1,5 +1,5 @@
 import type { Edge, Node } from '@xyflow/react'
-import type { Project, WorkflowNodeData, WorkflowTemplate } from '../types/project'
+import type { Project, WorkflowNodeData, WorkflowTemplate } from '../types/project.ts'
 
 const defaultNodes: Node<WorkflowNodeData>[] = [
   {
