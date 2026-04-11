@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core'
-import { mockProjects } from '../data/mock-projects'
 import { createDefaultProject } from './project-defaults'
 import type { Project, WorkflowTemplate } from '../types/project'
 
@@ -95,21 +94,19 @@ function isTauri() {
 
 function loadWebProjects() {
   if (typeof localStorage === 'undefined') {
-    return mockProjects
+    return []
   }
 
   const raw = localStorage.getItem(STORAGE_KEY)
 
   if (!raw) {
-    saveWebProjects(mockProjects)
-    return mockProjects
+    return []
   }
 
   try {
     return JSON.parse(raw) as Project[]
   } catch {
-    saveWebProjects(mockProjects)
-    return mockProjects
+    return []
   }
 }
 

@@ -273,8 +273,20 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 }))
 
 function getErrorMessage(error: unknown) {
+  if (typeof error === 'string') {
+    return error
+  }
+
   if (error instanceof Error) {
     return error.message
+  }
+
+  if (typeof error === 'object' && error && 'message' in error) {
+    const { message } = error
+
+    if (typeof message === 'string') {
+      return message
+    }
   }
 
   return 'Unexpected project error'
