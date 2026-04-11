@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getVersion } from '@tauri-apps/api/app'
 import { invoke } from '@tauri-apps/api/core'
 import { ProjectSidebar } from './features/projects/ProjectSidebar'
+import { SettingsPanel } from './features/settings/SettingsPanel'
 import { WorkspaceShell } from './features/workspace/WorkspaceShell'
 import { useProjectsStore } from './store/projects-store'
 
@@ -48,6 +49,7 @@ function App() {
         </div>
 
         <ProjectSidebar storageNote={storageNote} />
+        <SettingsPanel />
 
         <div className="app-meta">
           <span>Beauty Campaign first</span>

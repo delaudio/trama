@@ -127,6 +127,79 @@ button:disabled {
   gap: 14px;
 }
 
+.settings-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+.settings-pill {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.settings-pill.is-ready {
+  background: rgba(86, 140, 75, 0.14);
+  color: #456e37;
+}
+
+.settings-pill.is-missing {
+  background: rgba(157, 47, 27, 0.12);
+  color: #8a2414;
+}
+
+.settings-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(255, 252, 248, 0.72);
+  border: 1px solid rgba(82, 55, 33, 0.08);
+}
+
+.settings-copy,
+.settings-hint {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.settings-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.settings-list div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-list dt {
+  color: var(--text-muted);
+}
+
+.settings-list dd {
+  margin: 0;
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-size: 0.84rem;
+}
+
 .projects-toolbar,
 .workspace-header,
 .section-title-row,

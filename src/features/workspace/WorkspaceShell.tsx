@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { falConfig } from '../../lib/fal-config'
 import { useProjectsStore } from '../../store/projects-store'
 import { WorkflowCanvas } from '../workflow/WorkflowCanvas'
 import type { MoodboardItem } from '../../types/project'
@@ -133,6 +134,12 @@ export function WorkspaceShell() {
     setMoodboardNote('')
   }
 
+  function handleRunWorkflow() {
+    if (!falConfig.hasApiKey) {
+      return
+    }
+  }
+
   if (!activeProject) {
     return (
       <section className="workspace-shell">
@@ -213,13 +220,25 @@ export function WorkspaceShell() {
           >
             {isSaving ? 'Saving...' : isDirty ? 'Save changes' : 'Saved'}
           </button>
-          <button className="primary-button" type="button">
-            Run workflow
+          <button
+            className="primary-button"
+            type="button"
+            disabled={!falConfig.hasApiKey}
+            onClick={handleRunWorkflow}
+          >
+            {falConfig.hasApiKey ? 'Run workflow' : 'API key required'}
           </button>
         </div>
       </header>
 
       {errorMessage ? <p className="workspace-message is-error">{errorMessage}</p> : null}
+      {!falConfig.hasApiKey ? (
+        <div className="workspace-message workspace-message-warning">
+          <p>
+            Fal API key missing. Add <strong>VITE_FAL_API_KEY</strong> to your local <strong>.env</strong> file before running workflows.
+          </p>
+        </div>
+      ) : null}
       {isDeleteConfirmOpen && deleteProjectId === activeProject.id ? (
         <div className="workspace-message workspace-message-warning">
           <p>
