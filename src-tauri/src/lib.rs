@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -180,43 +180,15 @@ fn delete_project(project_id: String) -> Result<(), String> {
 }
 
 fn read_all_projects() -> Result<Vec<ProjectRecord>, String> {
-    let projects_dir = projects_dir()?;
-
-    if !projects_dir.exists() {
-        fs::create_dir_all(&projects_dir).map_err(|error| error.to_string())?;
-        return Ok(vec![]);
-    }
-
-    let mut projects = vec![];
-
-    for entry in fs::read_dir(projects_dir).map_err(|error| error.to_string())? {
-        let entry = entry.map_err(|error| error.to_string())?;
-        let path = entry.path().join(PROJECT_FILE_NAME);
-
-        if path.exists() {
-            let contents = fs::read_to_string(path).map_err(|error| error.to_string())?;
-            let project = serde_json::from_str::<ProjectRecord>(&contents)
-                .map_err(|error| error.to_string())?;
-            projects.push(project);
-        }
-    }
-
-    Ok(projects)
+    read_all_projects_at(&projects_dir()?)
 }
 
 fn read_project(project_id: &str) -> Result<ProjectRecord, String> {
-    let path = project_file(project_id)?;
-    let contents = fs::read_to_string(path).map_err(|error| error.to_string())?;
-    serde_json::from_str(&contents).map_err(|error| error.to_string())
+    read_project_at(&projects_dir()?, project_id)
 }
 
 fn write_project(project: &ProjectRecord) -> Result<(), String> {
-    let project_dir = project_dir(&project.id)?;
-    fs::create_dir_all(project_dir.join("moodboard")).map_err(|error| error.to_string())?;
-    fs::create_dir_all(project_dir.join("outputs")).map_err(|error| error.to_string())?;
-
-    let payload = serde_json::to_string_pretty(project).map_err(|error| error.to_string())?;
-    fs::write(project_file(&project.id)?, payload).map_err(|error| error.to_string())
+    write_project_at(&projects_dir()?, project)
 }
 
 fn create_default_project(name: &str, template: &str) -> ProjectRecord {
@@ -377,11 +349,58 @@ fn projects_dir() -> Result<PathBuf, String> {
 }
 
 fn project_dir(project_id: &str) -> Result<PathBuf, String> {
-    Ok(projects_dir()?.join(project_id))
+    Ok(project_dir_at(&projects_dir()?, project_id))
 }
 
 fn project_file(project_id: &str) -> Result<PathBuf, String> {
-    Ok(project_dir(project_id)?.join(PROJECT_FILE_NAME))
+    Ok(project_file_at(&projects_dir()?, project_id))
+}
+
+fn read_all_projects_at(projects_dir: &Path) -> Result<Vec<ProjectRecord>, String> {
+    if !projects_dir.exists() {
+        fs::create_dir_all(projects_dir).map_err(|error| error.to_string())?;
+        return Ok(vec![]);
+    }
+
+    let mut projects = vec![];
+
+    for entry in fs::read_dir(projects_dir).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        let path = entry.path().join(PROJECT_FILE_NAME);
+
+        if path.exists() {
+            let contents = fs::read_to_string(path).map_err(|error| error.to_string())?;
+            let project = serde_json::from_str::<ProjectRecord>(&contents)
+                .map_err(|error| error.to_string())?;
+            projects.push(project);
+        }
+    }
+
+    Ok(projects)
+}
+
+fn read_project_at(projects_dir: &Path, project_id: &str) -> Result<ProjectRecord, String> {
+    let path = project_file_at(projects_dir, project_id);
+    let contents = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    serde_json::from_str(&contents).map_err(|error| error.to_string())
+}
+
+fn write_project_at(projects_dir: &Path, project: &ProjectRecord) -> Result<(), String> {
+    let project_dir = project_dir_at(projects_dir, &project.id);
+    fs::create_dir_all(project_dir.join("moodboard")).map_err(|error| error.to_string())?;
+    fs::create_dir_all(project_dir.join("outputs")).map_err(|error| error.to_string())?;
+
+    let payload = serde_json::to_string_pretty(project).map_err(|error| error.to_string())?;
+    fs::write(project_file_at(projects_dir, &project.id), payload)
+        .map_err(|error| error.to_string())
+}
+
+fn project_dir_at(projects_dir: &Path, project_id: &str) -> PathBuf {
+    projects_dir.join(project_id)
+}
+
+fn project_file_at(projects_dir: &Path, project_id: &str) -> PathBuf {
+    project_dir_at(projects_dir, project_id).join(PROJECT_FILE_NAME)
 }
 
 fn slugify(value: &str) -> String {
@@ -427,6 +446,82 @@ impl From<&ProjectRecord> for ProjectSummary {
             updated_at: project.updated_at.clone(),
             moodboard_count: project.moodboard_count,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestWorkspace {
+        root: PathBuf,
+    }
+
+    impl TestWorkspace {
+        fn new() -> Self {
+            let root = std::env::temp_dir().join(format!("trama-persistence-{}", unique_suffix()));
+            fs::create_dir_all(&root).expect("create test workspace");
+            Self { root }
+        }
+
+        fn projects_dir(&self) -> PathBuf {
+            self.root.join(PROJECTS_DIR_NAME)
+        }
+    }
+
+    impl Drop for TestWorkspace {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    #[test]
+    fn write_project_creates_expected_project_layout() {
+        let workspace = TestWorkspace::new();
+        let projects_dir = workspace.projects_dir();
+        let project = create_default_project("Persistence Check", "beauty-campaign");
+
+        write_project_at(&projects_dir, &project).expect("write project");
+
+        let project_dir = project_dir_at(&projects_dir, &project.id);
+        assert!(project_file_at(&projects_dir, &project.id).exists());
+        assert!(project_dir.join("moodboard").exists());
+        assert!(project_dir.join("outputs").exists());
+
+        let loaded = read_project_at(&projects_dir, &project.id).expect("read project");
+        assert_eq!(loaded.id, project.id);
+        assert_eq!(loaded.name, project.name);
+        assert_eq!(loaded.template, project.template);
+        assert_eq!(loaded.moodboard_count, project.moodboard_count);
+    }
+
+    #[test]
+    fn read_all_projects_supports_summary_list_ordering() {
+        let workspace = TestWorkspace::new();
+        let projects_dir = workspace.projects_dir();
+        let mut older = create_default_project("Older", "beauty-campaign");
+        older.id = "older".into();
+        older.updated_at = "100".into();
+        older.created_at = "100".into();
+
+        let mut newer = create_default_project("Newer", "beauty-campaign");
+        newer.id = "newer".into();
+        newer.updated_at = "200".into();
+        newer.created_at = "200".into();
+
+        write_project_at(&projects_dir, &older).expect("write older project");
+        write_project_at(&projects_dir, &newer).expect("write newer project");
+
+        let mut projects = read_all_projects_at(&projects_dir).expect("read all projects");
+        projects.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+
+        let summaries: Vec<ProjectSummary> = projects.iter().map(ProjectSummary::from).collect();
+
+        assert_eq!(summaries.len(), 2);
+        assert_eq!(summaries[0].id, "newer");
+        assert_eq!(summaries[1].id, "older");
+        assert_eq!(summaries[0].moodboard_count, newer.moodboard.len());
+        assert_eq!(summaries[1].moodboard_count, older.moodboard.len());
     }
 }
 

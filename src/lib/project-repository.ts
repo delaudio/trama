@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
-import { createDefaultProject } from './project-defaults'
-import type { Project, ProjectSummary, WorkflowTemplate } from '../types/project'
+import { createDefaultProject } from './project-defaults.ts'
+import type { Project, ProjectSummary, WorkflowTemplate } from '../types/project.ts'
 
 const STORAGE_KEY = 'trama.projects.v1'
 
@@ -86,6 +86,7 @@ const tauriRepository: ProjectRepository = {
   deleteProject: (projectId) => invoke<void>('delete_project', { projectId }),
 }
 
+export const webProjectRepository = webRepository
 export const projectRepository = isTauri() ? tauriRepository : webRepository
 
 function isTauri() {

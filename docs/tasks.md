@@ -5,23 +5,23 @@
 - [ ] Initialize Tauri + React + TypeScript app
 - [ ] Add React Flow
 - [ ] Add Zustand
-- [x] Define base project folder layout
-- [x] Define TypeScript domain models
-- [x] Define repository interfaces for projects and assets
+- [ ] Define base project folder layout
+- [ ] Define TypeScript domain models
+- [ ] Define repository interfaces for projects and assets
 - [ ] Set up base workspace layout
 - [ ] Add home screen for project list
 
 ## Milestone 2: Project Management
 
-- [x] Implement Tauri command to list projects
-- [x] Implement Tauri command to create a project
-- [x] Implement Tauri command to rename a project
-- [x] Implement Tauri command to delete a project
-- [x] Implement Tauri command to load a project
-- [x] Implement Tauri command to save a project
-- [x] Add project create flow in the UI
-- [x] Add project rename flow in the UI
-- [x] Add project delete flow in the UI
+- [ ] Implement Tauri command to list projects
+- [ ] Implement Tauri command to create a project
+- [ ] Implement Tauri command to rename a project
+- [ ] Implement Tauri command to delete a project
+- [ ] Implement Tauri command to load a project
+- [ ] Implement Tauri command to save a project
+- [ ] Add project create flow in the UI
+- [ ] Add project rename flow in the UI
+- [ ] Add project delete flow in the UI
 
 ## Milestone 3: Workflow Editor
 
