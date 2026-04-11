@@ -1,15 +1,35 @@
 import { useEffect, useState } from 'react'
 import { getVersion } from '@tauri-apps/api/app'
+import { invoke } from '@tauri-apps/api/core'
 import { ProjectSidebar } from './features/projects/ProjectSidebar'
 import { WorkspaceShell } from './features/workspace/WorkspaceShell'
 import { useProjectsStore } from './store/projects-store'
 
+type AppHealth = {
+  productName: string
+  dataDir?: string | null
+  projectsDir?: string | null
+}
+
 function App() {
   const [appVersion, setAppVersion] = useState<string>('web')
+  const [storageNote, setStorageNote] = useState(
+    'Desktop projects live in app-data/trama/projects/<project-id>; web preview uses browser storage.',
+  )
   const loadProjects = useProjectsStore((state) => state.loadProjects)
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => setAppVersion('web'))
+  }, [])
+
+  useEffect(() => {
+    invoke<AppHealth>('app_health')
+      .then((health) => {
+        if (health.projectsDir) {
+          setStorageNote(`Projects stored in ${health.projectsDir}`)
+        }
+      })
+      .catch(() => undefined)
   }, [])
 
   useEffect(() => {
@@ -27,7 +47,7 @@ function App() {
           </div>
         </div>
 
-        <ProjectSidebar />
+        <ProjectSidebar storageNote={storageNote} />
 
         <div className="app-meta">
           <span>Beauty Campaign first</span>

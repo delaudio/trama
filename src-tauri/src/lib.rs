@@ -10,9 +10,11 @@ const PROJECTS_DIR_NAME: &str = "projects";
 const PROJECT_FILE_NAME: &str = "project.json";
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct AppHealth {
     product_name: String,
     data_dir: Option<String>,
+    projects_dir: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -82,6 +84,17 @@ struct OutputItem {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+struct ProjectSummary {
+    id: String,
+    name: String,
+    template: String,
+    created_at: String,
+    updated_at: String,
+    moodboard_count: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 struct ProjectRecord {
     id: String,
     name: String,
@@ -99,14 +112,15 @@ fn app_health() -> AppHealth {
     AppHealth {
         product_name: "trama".into(),
         data_dir: app_data_dir().ok().map(|path| path.display().to_string()),
+        projects_dir: projects_dir().ok().map(|path| path.display().to_string()),
     }
 }
 
 #[tauri::command]
-fn list_projects() -> Result<Vec<ProjectRecord>, String> {
+fn list_projects() -> Result<Vec<ProjectSummary>, String> {
     let mut projects = read_all_projects()?;
     projects.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
-    Ok(projects)
+    Ok(projects.iter().map(ProjectSummary::from).collect())
 }
 
 #[tauri::command]
@@ -119,7 +133,7 @@ fn create_project(name: String, template: Option<String>) -> Result<ProjectRecor
     let name = name.trim();
 
     if name.is_empty() {
-      return Err("Project name cannot be empty".into());
+        return Err("Project name cannot be empty".into());
     }
 
     let project = create_default_project(name, template.as_deref().unwrap_or("beauty-campaign"));
@@ -181,8 +195,8 @@ fn read_all_projects() -> Result<Vec<ProjectRecord>, String> {
 
         if path.exists() {
             let contents = fs::read_to_string(path).map_err(|error| error.to_string())?;
-            let project =
-                serde_json::from_str::<ProjectRecord>(&contents).map_err(|error| error.to_string())?;
+            let project = serde_json::from_str::<ProjectRecord>(&contents)
+                .map_err(|error| error.to_string())?;
             projects.push(project);
         }
     }
@@ -401,6 +415,19 @@ fn iso_now() -> String {
         .unwrap_or(0);
 
     format!("{milliseconds}")
+}
+
+impl From<&ProjectRecord> for ProjectSummary {
+    fn from(project: &ProjectRecord) -> Self {
+        Self {
+            id: project.id.clone(),
+            name: project.name.clone(),
+            template: project.template.clone(),
+            created_at: project.created_at.clone(),
+            updated_at: project.updated_at.clone(),
+            moodboard_count: project.moodboard_count,
+        }
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

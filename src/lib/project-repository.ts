@@ -1,11 +1,11 @@
 import { invoke } from '@tauri-apps/api/core'
 import { createDefaultProject } from './project-defaults'
-import type { Project, WorkflowTemplate } from '../types/project'
+import type { Project, ProjectSummary, WorkflowTemplate } from '../types/project'
 
 const STORAGE_KEY = 'trama.projects.v1'
 
 type ProjectRepository = {
-  listProjects: () => Promise<Project[]>
+  listProjects: () => Promise<ProjectSummary[]>
   loadProject: (projectId: string) => Promise<Project>
   createProject: (name: string, template?: WorkflowTemplate) => Promise<Project>
   saveProject: (project: Project) => Promise<Project>
@@ -15,7 +15,7 @@ type ProjectRepository = {
 
 const webRepository: ProjectRepository = {
   async listProjects() {
-    return loadWebProjects()
+    return loadWebProjects().map(toProjectSummary)
   },
   async loadProject(projectId) {
     const projects = loadWebProjects()
@@ -76,7 +76,7 @@ const webRepository: ProjectRepository = {
 }
 
 const tauriRepository: ProjectRepository = {
-  listProjects: () => invoke<Project[]>('list_projects'),
+  listProjects: () => invoke<ProjectSummary[]>('list_projects'),
   loadProject: (projectId) => invoke<Project>('load_project', { projectId }),
   createProject: (name, template = 'beauty-campaign') =>
     invoke<Project>('create_project', { name, template }),
@@ -116,4 +116,15 @@ function saveWebProjects(projects: Project[]) {
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+}
+
+function toProjectSummary(project: Project): ProjectSummary {
+  return {
+    id: project.id,
+    name: project.name,
+    template: project.template,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    moodboardCount: project.moodboardCount,
+  }
 }

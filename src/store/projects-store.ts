@@ -10,10 +10,10 @@ import {
   type Viewport,
 } from '@xyflow/react'
 import { projectRepository } from '../lib/project-repository'
-import type { Project, WorkflowNodeData } from '../types/project'
+import type { Project, ProjectSummary, WorkflowNodeData } from '../types/project'
 
 type ProjectsState = {
-  projects: Project[]
+  projects: ProjectSummary[]
   activeProject: Project | null
   activeProjectId: string
   isLoading: boolean
