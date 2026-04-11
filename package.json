@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node --test --experimental-strip-types --experimental-specifier-resolution=node src/lib/project-repository.test.ts src/features/workflow/workflow-io.test.ts",
+    "test": "node --test --experimental-strip-types --experimental-specifier-resolution=node src/lib/project-repository.test.ts src/lib/fal-config.test.ts src/features/workflow/workflow-io.test.ts",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
