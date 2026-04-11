@@ -514,6 +514,32 @@ button:disabled {
   overflow: hidden;
 }
 
+.operations-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1rem 0;
+}
+
+.operations-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.operation-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 250, 243, 0.92);
+  border: 1px solid rgba(155, 96, 52, 0.14);
+}
+
+.operation-card strong,
+.operation-card p {
+  margin: 0;
+}
+
 .workflow-canvas {
   position: relative;
   width: 100%;
@@ -521,12 +547,20 @@ button:disabled {
 }
 
 .flow-node {
+  position: relative;
   min-width: 180px;
   padding: 14px;
   border-radius: 18px;
   border: 1px solid rgba(94, 51, 23, 0.16);
   background: rgba(255, 251, 244, 0.96);
   box-shadow: 0 10px 24px rgba(69, 44, 22, 0.12);
+}
+
+.flow-node-handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255, 248, 240, 0.92);
+  background: #8e4d22;
 }
 
 .flow-node h4 {
@@ -546,6 +580,26 @@ button:disabled {
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid rgba(94, 51, 23, 0.1);
+}
+
+.flow-node-operation {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 244, 230, 0.88);
+  border: 1px solid rgba(155, 96, 52, 0.18);
+}
+
+.flow-node-operation strong {
+  font-size: 0.85rem;
+}
+
+.flow-node-operation span {
+  color: rgba(77, 48, 24, 0.82);
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .flow-node-io-group {

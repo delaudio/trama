@@ -48,6 +48,6 @@ This repository is intended to work as a standard local git project.
 
 Do not document user-specific absolute filesystem paths in shared setup steps.
 
-For Fal-backed workflow runs, create a local `.env` file from `.env.example` and set `VITE_FAL_API_KEY`.
+For Fal-backed workflow runs and curated Fal operation previews, create a local `.env` file from `.env.example` and set `VITE_FAL_API_KEY`.
 
 If needed, add your own remote locally with the usual git workflow for your environment.
