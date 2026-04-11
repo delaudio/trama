@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
@@ -70,8 +71,11 @@ struct ProjectGraph {
 #[serde(rename_all = "camelCase")]
 struct MoodboardItem {
     id: String,
+    filename: String,
+    path: String,
     title: String,
     note: String,
+    created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -80,6 +84,15 @@ struct OutputItem {
     id: String,
     title: String,
     note: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct MoodboardImportFile {
+    name: String,
+    #[serde(rename = "type")]
+    content_type: String,
+    data_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -179,6 +192,91 @@ fn delete_project(project_id: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn import_moodboard_images(
+    project_id: String,
+    files: Vec<MoodboardImportFile>,
+) -> Result<ProjectRecord, String> {
+    if files.is_empty() {
+        return read_project(&project_id);
+    }
+
+    let mut project = read_project(&project_id)?;
+    let moodboard_dir = project_dir(&project_id)?.join("moodboard");
+    fs::create_dir_all(&moodboard_dir).map_err(|error| error.to_string())?;
+
+    let mut imported_items = Vec::with_capacity(files.len());
+
+    for file in files {
+        let extension = file_extension(&file.name, &file.content_type);
+        let stored_name = format!("{}{}", unique_suffix(), extension);
+        let stored_path = moodboard_dir.join(&stored_name);
+        let bytes = decode_data_url(&file.data_url)?;
+
+        fs::write(&stored_path, bytes).map_err(|error| error.to_string())?;
+
+        imported_items.push(MoodboardItem {
+            id: format!("mb-{}", unique_suffix()),
+            filename: stored_name,
+            path: stored_path.display().to_string(),
+            title: title_from_filename(&file.name),
+            note: String::new(),
+            created_at: iso_now(),
+        });
+    }
+
+    imported_items.append(&mut project.moodboard);
+    project.moodboard = imported_items;
+    project.moodboard_count = project.moodboard.len();
+    project.updated_at = iso_now();
+    write_project(&project)?;
+    Ok(project)
+}
+
+#[tauri::command]
+fn update_moodboard_item(project_id: String, item: MoodboardItem) -> Result<ProjectRecord, String> {
+    let mut project = read_project(&project_id)?;
+
+    let Some(index) = project.moodboard.iter().position(|entry| entry.id == item.id) else {
+        return Err(format!("Moodboard item {} not found", item.id));
+    };
+
+    project.moodboard[index] = item;
+    project.updated_at = iso_now();
+    project.moodboard_count = project.moodboard.len();
+    write_project(&project)?;
+    Ok(project)
+}
+
+#[tauri::command]
+fn delete_moodboard_item(
+    project_id: String,
+    moodboard_item_id: String,
+) -> Result<ProjectRecord, String> {
+    let mut project = read_project(&project_id)?;
+    let Some(index) = project
+        .moodboard
+        .iter()
+        .position(|item| item.id == moodboard_item_id)
+    else {
+        return Err(format!("Moodboard item {} not found", moodboard_item_id));
+    };
+
+    let item = project.moodboard.remove(index);
+
+    if !item.path.is_empty() {
+        let item_path = PathBuf::from(&item.path);
+        if item_path.exists() {
+            fs::remove_file(item_path).map_err(|error| error.to_string())?;
+        }
+    }
+
+    project.updated_at = iso_now();
+    project.moodboard_count = project.moodboard.len();
+    write_project(&project)?;
+    Ok(project)
+}
+
 fn read_all_projects() -> Result<Vec<ProjectRecord>, String> {
     read_all_projects_at(&projects_dir()?)
 }
@@ -200,7 +298,7 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
         name: name.into(),
         template: template.into(),
         created_at: now.clone(),
-        updated_at: now,
+        updated_at: now.clone(),
         moodboard_count: 4,
         graph: ProjectGraph {
             nodes: vec![
@@ -301,23 +399,35 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
         moodboard: vec![
             MoodboardItem {
                 id: "mb-soft-light".into(),
+                filename: "soft-skin-light.jpg".into(),
+                path: String::new(),
                 title: "Soft skin light".into(),
                 note: "Neutral warmth, diffusion, elegant glow on cheekbones.".into(),
+                created_at: now.clone(),
             },
             MoodboardItem {
                 id: "mb-bottle-angle".into(),
+                filename: "bottle-angle.jpg".into(),
+                path: String::new(),
                 title: "Bottle angle".into(),
                 note: "Slight top-left view with strong shadow discipline.".into(),
+                created_at: now.clone(),
             },
             MoodboardItem {
                 id: "mb-gold-cream".into(),
+                filename: "gold-and-cream.jpg".into(),
+                path: String::new(),
                 title: "Gold and cream".into(),
                 note: "Good palette for premium but soft campaign visuals.".into(),
+                created_at: now.clone(),
             },
             MoodboardItem {
                 id: "mb-charcoal-contrast".into(),
+                filename: "contrast-note.jpg".into(),
+                path: String::new(),
                 title: "Contrast note".into(),
                 note: "Useful accent for typography and pack contrast.".into(),
+                created_at: now,
             },
         ],
         outputs: vec![
@@ -418,6 +528,39 @@ fn slugify(value: &str) -> String {
     }
 
     slug.trim_matches('-').to_string()
+}
+
+fn title_from_filename(filename: &str) -> String {
+    let stem = filename.rsplit_once('.').map(|(name, _)| name).unwrap_or(filename);
+    stem.replace(['-', '_'], " ")
+}
+
+fn file_extension(filename: &str, content_type: &str) -> String {
+    if let Some((_, extension)) = filename.rsplit_once('.') {
+        return format!(".{}", extension.to_ascii_lowercase());
+    }
+
+    match content_type {
+        "image/jpeg" => ".jpg".into(),
+        "image/png" => ".png".into(),
+        "image/webp" => ".webp".into(),
+        "image/gif" => ".gif".into(),
+        _ => ".bin".into(),
+    }
+}
+
+fn decode_data_url(data_url: &str) -> Result<Vec<u8>, String> {
+    let Some((metadata, payload)) = data_url.split_once(',') else {
+        return Err("Invalid data URL".into());
+    };
+
+    if !metadata.ends_with(";base64") {
+        return Err("Only base64 data URLs are supported".into());
+    }
+
+    BASE64_STANDARD
+        .decode(payload)
+        .map_err(|error| error.to_string())
 }
 
 fn unique_suffix() -> String {
@@ -530,6 +673,65 @@ mod tests {
         assert_eq!(summaries[0].moodboard_count, newer.moodboard.len());
         assert_eq!(summaries[1].moodboard_count, older.moodboard.len());
     }
+
+    #[test]
+    fn delete_moodboard_item_removes_file_and_metadata() {
+        let workspace = TestWorkspace::new();
+        let projects_dir = workspace.projects_dir();
+        let mut project = create_default_project("Moodboard Delete", "beauty-campaign");
+        let image_path = project_dir_at(&projects_dir, &project.id)
+            .join("moodboard")
+            .join("delete-me.jpg");
+
+        fs::create_dir_all(image_path.parent().expect("image parent"))
+            .expect("create moodboard directory");
+        fs::write(&image_path, [1_u8, 2, 3]).expect("write preview file");
+
+        project.moodboard = vec![MoodboardItem {
+            id: "mb-delete".into(),
+            filename: "delete-me.jpg".into(),
+            path: image_path.display().to_string(),
+            title: "Delete Me".into(),
+            note: String::new(),
+            created_at: "100".into(),
+        }];
+        write_project_at(&projects_dir, &project).expect("write project");
+
+        let deleted = delete_moodboard_item_at(&projects_dir, &project.id, "mb-delete")
+            .expect("delete moodboard item");
+
+        assert!(deleted.moodboard.is_empty());
+        assert!(!image_path.exists());
+    }
+}
+
+fn delete_moodboard_item_at(
+    projects_dir: &Path,
+    project_id: &str,
+    moodboard_item_id: &str,
+) -> Result<ProjectRecord, String> {
+    let mut project = read_project_at(projects_dir, project_id)?;
+    let Some(index) = project
+        .moodboard
+        .iter()
+        .position(|item| item.id == moodboard_item_id)
+    else {
+        return Err(format!("Moodboard item {} not found", moodboard_item_id));
+    };
+
+    let item = project.moodboard.remove(index);
+
+    if !item.path.is_empty() {
+        let item_path = PathBuf::from(&item.path);
+        if item_path.exists() {
+            fs::remove_file(item_path).map_err(|error| error.to_string())?;
+        }
+    }
+
+    project.updated_at = iso_now();
+    project.moodboard_count = project.moodboard.len();
+    write_project_at(projects_dir, &project)?;
+    Ok(project)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -542,7 +744,10 @@ pub fn run() {
             create_project,
             save_project,
             rename_project,
-            delete_project
+            delete_project,
+            import_moodboard_images,
+            update_moodboard_item,
+            delete_moodboard_item
         ])
         .run(tauri::generate_context!())
         .expect("error while running trama application");

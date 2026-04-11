@@ -10,7 +10,12 @@ import {
   type Viewport,
 } from '@xyflow/react'
 import { projectRepository } from '../lib/project-repository'
-import type { Project, ProjectSummary, WorkflowNodeData } from '../types/project'
+import type {
+  MoodboardItem,
+  Project,
+  ProjectSummary,
+  WorkflowNodeData,
+} from '../types/project'
 
 type ProjectsState = {
   projects: ProjectSummary[]
@@ -26,6 +31,9 @@ type ProjectsState = {
   saveActiveProject: () => Promise<void>
   renameActiveProject: (name: string) => Promise<void>
   deleteActiveProject: () => Promise<void>
+  importMoodboardImages: (files: File[]) => Promise<void>
+  updateMoodboardItem: (itemId: string, patch: Pick<MoodboardItem, 'title' | 'note'>) => Promise<void>
+  deleteMoodboardItem: (itemId: string) => Promise<void>
   applyNodeChanges: (changes: NodeChange<Node<WorkflowNodeData>>[]) => void
   applyEdgeChanges: (changes: EdgeChange[]) => void
   connectNodes: (connection: Connection) => void
@@ -184,6 +192,90 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     } catch (error) {
       set({
         isLoading: false,
+        errorMessage: getErrorMessage(error),
+      })
+    }
+  },
+  async importMoodboardImages(files) {
+    const activeProjectId = get().activeProjectId
+
+    if (!activeProjectId || !files.length) {
+      return
+    }
+
+    set({ isSaving: true, errorMessage: '' })
+
+    try {
+      const activeProject = await projectRepository.importMoodboardImages(activeProjectId, files)
+      const projects = await projectRepository.listProjects()
+      set({
+        activeProject,
+        projects,
+        isSaving: false,
+        isDirty: false,
+      })
+    } catch (error) {
+      set({
+        isSaving: false,
+        errorMessage: getErrorMessage(error),
+      })
+    }
+  },
+  async updateMoodboardItem(itemId, patch) {
+    const activeProject = get().activeProject
+
+    if (!activeProject) {
+      return
+    }
+
+    const targetItem = activeProject.moodboard.find((item) => item.id === itemId)
+
+    if (!targetItem) {
+      return
+    }
+
+    set({ isSaving: true, errorMessage: '' })
+
+    try {
+      const nextProject = await projectRepository.updateMoodboardItem(activeProject.id, {
+        ...targetItem,
+        ...patch,
+      })
+      const projects = await projectRepository.listProjects()
+      set({
+        activeProject: nextProject,
+        projects,
+        isSaving: false,
+        isDirty: false,
+      })
+    } catch (error) {
+      set({
+        isSaving: false,
+        errorMessage: getErrorMessage(error),
+      })
+    }
+  },
+  async deleteMoodboardItem(itemId) {
+    const activeProject = get().activeProject
+
+    if (!activeProject) {
+      return
+    }
+
+    set({ isSaving: true, errorMessage: '' })
+
+    try {
+      const nextProject = await projectRepository.deleteMoodboardItem(activeProject.id, itemId)
+      const projects = await projectRepository.listProjects()
+      set({
+        activeProject: nextProject,
+        projects,
+        isSaving: false,
+        isDirty: false,
+      })
+    } catch (error) {
+      set({
+        isSaving: false,
         errorMessage: getErrorMessage(error),
       })
     }

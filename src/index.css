@@ -39,7 +39,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+label {
   font: inherit;
 }
 
@@ -152,6 +153,16 @@ button:disabled {
   color: var(--accent-strong);
 }
 
+.file-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-input {
+  display: none;
+}
+
 .ghost-button:hover,
 .chip-button:hover,
 .primary-button:hover {
@@ -221,6 +232,11 @@ button:disabled {
 .text-input:focus {
   outline: 2px solid rgba(201, 120, 58, 0.22);
   border-color: rgba(142, 77, 34, 0.26);
+}
+
+.moodboard-textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 .project-form-actions,
@@ -471,12 +487,86 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 16px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.moodboard-preview-panel,
+.moodboard-empty-state {
+  margin-top: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(82, 55, 33, 0.08);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.moodboard-preview-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+}
+
+.moodboard-empty-state {
+  padding: 18px;
+}
+
+.moodboard-empty-state p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.moodboard-preview-stage {
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgba(255, 247, 236, 0.9);
+  border: 1px solid rgba(82, 55, 33, 0.08);
+}
+
+.moodboard-preview-image,
+.moodboard-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.moodboard-preview-image {
+  aspect-ratio: 4 / 3;
+}
+
+.moodboard-preview-swatch {
+  aspect-ratio: 4 / 3;
+}
+
+.moodboard-editor {
+  display: grid;
+  gap: 10px;
 }
 
 .moodboard-card {
   overflow: hidden;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.72);
+}
+
+.moodboard-card-button {
+  padding: 0;
+  border: 1px solid transparent;
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.moodboard-card-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.moodboard-card-button.is-active {
+  border-color: rgba(142, 77, 34, 0.28);
+  background: rgba(255, 252, 247, 0.9);
 }
 
 .moodboard-swatch,

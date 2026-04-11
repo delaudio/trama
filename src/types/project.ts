@@ -19,8 +19,11 @@ export type WorkflowNodeData = {
 
 export type MoodboardItem = {
   id: string
+  filename: string
+  path: string
   title: string
   note: string
+  createdAt: string
 }
 
 export type OutputItem = {
@@ -46,4 +49,10 @@ export type Project = ProjectSummary & {
   }
   moodboard: MoodboardItem[]
   outputs: OutputItem[]
+}
+
+export type MoodboardImportPayload = {
+  name: string
+  type: string
+  dataUrl: string
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { convertFileSrc } from '@tauri-apps/api/core'
 import { useProjectsStore } from '../../store/projects-store'
 import { WorkflowCanvas } from '../workflow/WorkflowCanvas'
+import type { MoodboardItem } from '../../types/project'
 
 export function WorkspaceShell() {
   const [isRenameFormOpen, setIsRenameFormOpen] = useState(false)
@@ -17,6 +19,31 @@ export function WorkspaceShell() {
   const saveActiveProject = useProjectsStore((state) => state.saveActiveProject)
   const renameActiveProject = useProjectsStore((state) => state.renameActiveProject)
   const deleteActiveProject = useProjectsStore((state) => state.deleteActiveProject)
+  const importMoodboardImages = useProjectsStore((state) => state.importMoodboardImages)
+  const updateMoodboardItem = useProjectsStore((state) => state.updateMoodboardItem)
+  const deleteMoodboardItem = useProjectsStore((state) => state.deleteMoodboardItem)
+
+  const [selectedMoodboardItemId, setSelectedMoodboardItemId] = useState('')
+  const [moodboardTitle, setMoodboardTitle] = useState('')
+  const [moodboardNote, setMoodboardNote] = useState('')
+
+  const selectedMoodboardItem = (() => {
+    if (!activeProject?.moodboard.length) {
+      return null
+    }
+
+    return (
+      activeProject.moodboard.find((item) => item.id === selectedMoodboardItemId) ??
+      activeProject.moodboard[0]
+    )
+  })()
+  const isEditingSelectedMoodboardItem = selectedMoodboardItem?.id === selectedMoodboardItemId
+  const displayedMoodboardTitle = isEditingSelectedMoodboardItem
+    ? moodboardTitle
+    : selectedMoodboardItem?.title ?? ''
+  const displayedMoodboardNote = isEditingSelectedMoodboardItem
+    ? moodboardNote
+    : selectedMoodboardItem?.note ?? ''
 
   function handleStartRename() {
     if (!activeProject) {
@@ -62,6 +89,48 @@ export function WorkspaceShell() {
     setIsDeleteConfirmOpen(false)
     setDeleteProjectId('')
     void deleteActiveProject()
+  }
+
+  async function handleMoodboardFileSelection(files: FileList | null) {
+    if (!files?.length) {
+      return
+    }
+
+    await importMoodboardImages(Array.from(files))
+  }
+
+  function handleSelectMoodboardItem(item: MoodboardItem) {
+    setSelectedMoodboardItemId(item.id)
+    setMoodboardTitle(item.title)
+    setMoodboardNote(item.note)
+  }
+
+  async function handleSaveMoodboardDetails() {
+    if (!selectedMoodboardItem) {
+      return
+    }
+
+    await updateMoodboardItem(selectedMoodboardItem.id, {
+      title: displayedMoodboardTitle.trim() || selectedMoodboardItem.title,
+      note: displayedMoodboardNote.trim(),
+    })
+  }
+
+  async function handleDeleteMoodboardItem() {
+    if (!selectedMoodboardItem) {
+      return
+    }
+
+    const shouldDelete = window.confirm(`Delete moodboard image "${selectedMoodboardItem.title}"?`)
+
+    if (!shouldDelete) {
+      return
+    }
+
+    await deleteMoodboardItem(selectedMoodboardItem.id)
+    setSelectedMoodboardItemId('')
+    setMoodboardTitle('')
+    setMoodboardNote('')
   }
 
   if (!activeProject) {
@@ -207,20 +276,101 @@ export function WorkspaceShell() {
                 <p className="eyebrow">Moodboard</p>
                 <h3>References linked to the project</h3>
               </div>
-              <button className="ghost-button" type="button">
+              <label className="ghost-button file-trigger">
                 Add images
-              </button>
+                <input
+                  className="file-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={isSaving}
+                  onChange={(event) => void handleMoodboardFileSelection(event.target.files)}
+                />
+              </label>
             </div>
+
+            {selectedMoodboardItem ? (
+              <div className="moodboard-preview-panel">
+                <div className="moodboard-preview-stage">
+                  {selectedMoodboardItem.path ? (
+                    <img
+                      className="moodboard-preview-image"
+                      src={toPreviewSrc(selectedMoodboardItem.path)}
+                      alt={selectedMoodboardItem.title}
+                    />
+                  ) : (
+                    <div className="moodboard-swatch moodboard-preview-swatch" />
+                  )}
+                </div>
+
+                <div className="moodboard-editor">
+                  <label className="field-label" htmlFor="moodboard-title">
+                    Title
+                  </label>
+                  <input
+                    id="moodboard-title"
+                    className="text-input"
+                    type="text"
+                    value={displayedMoodboardTitle}
+                    onChange={(event) => {
+                      setSelectedMoodboardItemId(selectedMoodboardItem.id)
+                      setMoodboardTitle(event.target.value)
+                    }}
+                  />
+
+                  <label className="field-label" htmlFor="moodboard-note">
+                    Note
+                  </label>
+                  <textarea
+                    id="moodboard-note"
+                    className="text-input moodboard-textarea"
+                    value={displayedMoodboardNote}
+                    rows={4}
+                    onChange={(event) => {
+                      setSelectedMoodboardItemId(selectedMoodboardItem.id)
+                      setMoodboardNote(event.target.value)
+                    }}
+                  />
+
+                  <div className="workspace-inline-actions">
+                    <button className="chip-button" type="button" disabled={isSaving} onClick={() => void handleSaveMoodboardDetails()}>
+                      {isSaving ? 'Saving...' : 'Save details'}
+                    </button>
+                    <button className="ghost-button" type="button" disabled={isSaving} onClick={() => void handleDeleteMoodboardItem()}>
+                      Delete image
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="moodboard-empty-state">
+                <p className="eyebrow">No references yet</p>
+                <p>Import one or more images to build the project moodboard.</p>
+              </div>
+            )}
 
             <div className="moodboard-grid">
               {activeProject.moodboard.map((item) => (
-                <article key={item.id} className="moodboard-card">
-                  <div className="moodboard-swatch" />
+                <button
+                  key={item.id}
+                  className={`moodboard-card moodboard-card-button ${selectedMoodboardItem?.id === item.id ? 'is-active' : ''}`}
+                  type="button"
+                  onClick={() => handleSelectMoodboardItem(item)}
+                >
+                  {item.path ? (
+                    <img
+                      className="moodboard-image"
+                      src={toPreviewSrc(item.path)}
+                      alt={item.title}
+                    />
+                  ) : (
+                    <div className="moodboard-swatch" />
+                  )}
                   <div className="moodboard-copy">
                     <strong>{item.title}</strong>
-                    <p className="moodboard-note">{item.note}</p>
+                    <p className="moodboard-note">{item.note || 'No note yet'}</p>
                   </div>
-                </article>
+                </button>
               ))}
             </div>
           </section>
@@ -252,4 +402,16 @@ export function WorkspaceShell() {
       </div>
     </section>
   )
+}
+
+function toPreviewSrc(path: string) {
+  if (!path) {
+    return ''
+  }
+
+  if (path.startsWith('data:')) {
+    return path
+  }
+
+  return convertFileSrc(path)
 }
