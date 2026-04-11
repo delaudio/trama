@@ -62,7 +62,17 @@ test('web repository persists create, rename, save, and delete flows via local s
   const loaded = await webProjectRepository.loadProject(created.id)
   const saved = await webProjectRepository.saveProject({
     ...loaded,
-    moodboard: [...loaded.moodboard, { id: 'mb-test', title: 'Test', note: 'Added in test' }],
+    moodboard: [
+      ...loaded.moodboard,
+      {
+        id: 'mb-test',
+        filename: 'test.png',
+        path: 'data:image/png;base64,dGVzdA==',
+        title: 'Test',
+        note: 'Added in test',
+        createdAt: new Date().toISOString(),
+      },
+    ],
   })
 
   assert.equal(saved.moodboardCount, loaded.moodboard.length + 1)
@@ -74,4 +84,30 @@ test('web repository persists create, rename, save, and delete flows via local s
   await webProjectRepository.deleteProject(created.id)
 
   assert.deepEqual(await webProjectRepository.listProjects(), [])
+})
+
+test('web repository imports, updates, and deletes moodboard images', async () => {
+  const created = await webProjectRepository.createProject('Moodboard Check')
+  const imported = await webProjectRepository.importMoodboardImages(created.id, [
+    new File(['pixel'], 'palette.png', { type: 'image/png' }),
+  ])
+
+  assert.equal(imported.moodboard[0]?.filename, 'palette.png')
+  assert.match(imported.moodboard[0]?.path ?? '', /^data:image\/png;base64,/)
+
+  const updated = await webProjectRepository.updateMoodboardItem(created.id, {
+    ...imported.moodboard[0],
+    title: 'Palette board',
+    note: 'Warm premium tones',
+  })
+
+  assert.equal(updated.moodboard[0]?.title, 'Palette board')
+  assert.equal(updated.moodboard[0]?.note, 'Warm premium tones')
+
+  const deleted = await webProjectRepository.deleteMoodboardItem(
+    created.id,
+    updated.moodboard[0].id,
+  )
+
+  assert.equal(deleted.moodboard.some((item) => item.id === updated.moodboard[0].id), false)
 })

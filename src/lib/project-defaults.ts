@@ -94,23 +94,35 @@ export function createDefaultProject(
     moodboard: [
       {
         id: 'mb-soft-light',
+        filename: 'soft-skin-light.jpg',
+        path: '',
         title: 'Soft skin light',
         note: 'Neutral warmth, diffusion, elegant glow on cheekbones.',
+        createdAt: timestamp,
       },
       {
         id: 'mb-bottle-angle',
+        filename: 'bottle-angle.jpg',
+        path: '',
         title: 'Bottle angle',
         note: 'Slight top-left view with strong shadow discipline.',
+        createdAt: timestamp,
       },
       {
         id: 'mb-gold-cream',
+        filename: 'gold-and-cream.jpg',
+        path: '',
         title: 'Gold and cream',
         note: 'Good palette for premium but soft campaign visuals.',
+        createdAt: timestamp,
       },
       {
         id: 'mb-charcoal-contrast',
+        filename: 'contrast-note.jpg',
+        path: '',
         title: 'Contrast note',
         note: 'Useful accent for typography and pack contrast.',
+        createdAt: timestamp,
       },
     ],
     outputs: [
