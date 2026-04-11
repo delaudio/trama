@@ -9,6 +9,7 @@ import {
   type NodeChange,
   type Viewport,
 } from '@xyflow/react'
+import { validateWorkflowConnection } from '../features/workflow/workflow-io'
 import { projectRepository } from '../lib/project-repository'
 import type {
   MoodboardItem,
@@ -25,6 +26,7 @@ type ProjectsState = {
   isSaving: boolean
   isDirty: boolean
   errorMessage: string
+  workflowMessage: string
   loadProjects: () => Promise<void>
   setActiveProject: (projectId: string) => Promise<void>
   createProject: (name: string) => Promise<void>
@@ -38,6 +40,7 @@ type ProjectsState = {
   applyEdgeChanges: (changes: EdgeChange[]) => void
   connectNodes: (connection: Connection) => void
   setViewport: (viewport: Viewport) => void
+  clearWorkflowMessage: () => void
 }
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
@@ -48,8 +51,9 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   isSaving: false,
   isDirty: false,
   errorMessage: '',
+  workflowMessage: '',
   async loadProjects() {
-    set({ isLoading: true, errorMessage: '' })
+    set({ isLoading: true, errorMessage: '', workflowMessage: '' })
 
     try {
       const projects = await projectRepository.listProjects()
@@ -77,7 +81,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       return
     }
 
-    set({ isLoading: true, errorMessage: '' })
+    set({ isLoading: true, errorMessage: '', workflowMessage: '' })
 
     try {
       const activeProject = await projectRepository.loadProject(projectId)
@@ -95,7 +99,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
   },
   async createProject(name) {
-    set({ isLoading: true, errorMessage: '' })
+    set({ isLoading: true, errorMessage: '', workflowMessage: '' })
 
     try {
       const activeProject = await projectRepository.createProject(name)
@@ -172,7 +176,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       return
     }
 
-    set({ isLoading: true, errorMessage: '' })
+    set({ isLoading: true, errorMessage: '', workflowMessage: '' })
 
     try {
       await projectRepository.deleteProject(activeProjectId)
@@ -299,6 +303,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         },
       },
       isDirty: true,
+      workflowMessage: '',
     })
   },
   applyEdgeChanges(changes) {
@@ -317,12 +322,26 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         },
       },
       isDirty: true,
+      workflowMessage: '',
     })
   },
   connectNodes(connection) {
     const activeProject = get().activeProject
 
     if (!activeProject || !connection.source || !connection.target) {
+      return
+    }
+
+    const validation = validateWorkflowConnection({
+      connection,
+      nodes: activeProject.graph.nodes,
+      edges: activeProject.graph.edges,
+    })
+
+    if (!validation.isValid) {
+      set({
+        workflowMessage: validation.reason ?? 'This connection is not allowed.',
+      })
       return
     }
 
@@ -342,6 +361,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         },
       },
       isDirty: true,
+      workflowMessage: '',
     })
   },
   setViewport(viewport) {
@@ -360,7 +380,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         },
       },
       isDirty: true,
+      workflowMessage: '',
     })
+  },
+  clearWorkflowMessage() {
+    set({ workflowMessage: '' })
   },
 }))
 

@@ -10,15 +10,28 @@ import {
   type EdgeChange,
   type Viewport,
 } from '@xyflow/react'
+import { getWorkflowNodeIo } from './workflow-io'
 import { useProjectsStore } from '../../store/projects-store'
 import type { WorkflowNodeData } from '../../types/project'
 
 function WorkflowNode({ data }: NodeProps<Node<WorkflowNodeData>>) {
+  const nodeIo = getWorkflowNodeIo(data.kind)
+
   return (
     <div className="flow-node">
       <p className="panel-label">{data.kind.replace('-', ' ')}</p>
       <h4>{data.label}</h4>
       <p>{data.description}</p>
+      <div className="flow-node-io">
+        <div className="flow-node-io-group">
+          <span className="flow-node-io-label">In</span>
+          <span>{nodeIo.inputs.length ? nodeIo.inputs.join(', ').replaceAll('-', ' ') : 'start'}</span>
+        </div>
+        <div className="flow-node-io-group">
+          <span className="flow-node-io-label">Out</span>
+          <span>{nodeIo.outputs.length ? nodeIo.outputs.join(', ').replaceAll('-', ' ') : 'end'}</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -33,6 +46,8 @@ export function WorkflowCanvas() {
   const applyEdgeChanges = useProjectsStore((state) => state.applyEdgeChanges)
   const connectNodes = useProjectsStore((state) => state.connectNodes)
   const setViewport = useProjectsStore((state) => state.setViewport)
+  const workflowMessage = useProjectsStore((state) => state.workflowMessage)
+  const clearWorkflowMessage = useProjectsStore((state) => state.clearWorkflowMessage)
 
   if (!activeProject) {
     return null
@@ -56,6 +71,15 @@ export function WorkflowCanvas() {
 
   return (
     <div className="workflow-canvas">
+      {workflowMessage ? (
+        <div className="workflow-feedback workflow-feedback-error">
+          <span>{workflowMessage}</span>
+          <button className="ghost-button workflow-feedback-dismiss" type="button" onClick={clearWorkflowMessage}>
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
       <ReactFlow
         key={activeProject.id}
         nodes={activeProject.graph.nodes}

@@ -11,10 +11,24 @@ export type WorkflowNodeKind =
   | 'upscale'
   | 'export'
 
+export type WorkflowDataType =
+  | 'prompt-text'
+  | 'reference-image'
+  | 'cutout-image'
+  | 'scene-image'
+  | 'composite-image'
+  | 'upscaled-image'
+  | 'export-ready-image'
+
 export type WorkflowNodeData = {
   kind: WorkflowNodeKind
   label: string
   description: string
+}
+
+export type WorkflowNodeIo = {
+  inputs: WorkflowDataType[]
+  outputs: WorkflowDataType[]
 }
 
 export type MoodboardItem = {
