@@ -14,7 +14,7 @@ type AppHealth = {
 function App() {
   const [appVersion, setAppVersion] = useState<string>('web')
   const [storageNote, setStorageNote] = useState(
-    'Desktop projects live in app-data/trama/projects/<project-id>; web preview uses browser storage.',
+    'Desktop projects are stored in the local app data directory; web preview uses browser storage.',
   )
   const loadProjects = useProjectsStore((state) => state.loadProjects)
 
