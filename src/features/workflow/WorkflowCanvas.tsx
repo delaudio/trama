@@ -1,7 +1,9 @@
 import {
   Background,
   Controls,
+  Handle,
   MiniMap,
+  Position,
   ReactFlow,
   type Connection,
   type Node,
@@ -11,17 +13,26 @@ import {
   type Viewport,
 } from '@xyflow/react'
 import { getWorkflowNodeIo } from './workflow-io'
+import { getFalOperationForNodeKind } from '../fal/fal-operations'
 import { useProjectsStore } from '../../store/projects-store'
 import type { WorkflowNodeData } from '../../types/project'
 
 function WorkflowNode({ data }: NodeProps<Node<WorkflowNodeData>>) {
   const nodeIo = getWorkflowNodeIo(data.kind)
+  const falOperation = getFalOperationForNodeKind(data.kind)
 
   return (
     <div className="flow-node">
-      <p className="panel-label">{data.kind.replace('-', ' ')}</p>
+      <Handle className="flow-node-handle" type="target" position={Position.Left} />
+      <p className="panel-label">{falOperation ? 'Fal operation' : data.kind.replace('-', ' ')}</p>
       <h4>{data.label}</h4>
       <p>{data.description}</p>
+      {falOperation ? (
+        <div className="flow-node-operation">
+          <strong>{falOperation.label}</strong>
+          <span>{falOperation.summary}</span>
+        </div>
+      ) : null}
       <div className="flow-node-io">
         <div className="flow-node-io-group">
           <span className="flow-node-io-label">In</span>
@@ -32,6 +43,7 @@ function WorkflowNode({ data }: NodeProps<Node<WorkflowNodeData>>) {
           <span>{nodeIo.outputs.length ? nodeIo.outputs.join(', ').replaceAll('-', ' ') : 'end'}</span>
         </div>
       </div>
+      <Handle className="flow-node-handle" type="source" position={Position.Right} />
     </div>
   )
 }

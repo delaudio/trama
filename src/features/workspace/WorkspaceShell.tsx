@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { listFalOperations } from '../fal/fal-operations'
 import { falConfig } from '../../lib/fal-config'
 import { useProjectsStore } from '../../store/projects-store'
 import { WorkflowCanvas } from '../workflow/WorkflowCanvas'
 import type { MoodboardItem } from '../../types/project'
+
+const falOperations = listFalOperations()
 
 export function WorkspaceShell() {
   const [isRenameFormOpen, setIsRenameFormOpen] = useState(false)
@@ -284,6 +287,26 @@ export function WorkspaceShell() {
           </div>
 
           <div className="flow-panel">
+            <div className="operations-panel">
+              <div className="section-title-row">
+                <div>
+                  <p className="eyebrow">Curated AI operations</p>
+                  <h3>Beauty Campaign modules</h3>
+                </div>
+              </div>
+
+              <div className="operations-grid">
+                {falOperations.map((operation) => (
+                  <article key={operation.id} className="operation-card">
+                    <p className="meta-label">{operation.label}</p>
+                    <strong>{operation.summary}</strong>
+                    <p>Inputs: {operation.io.inputs.join(', ').replaceAll('-', ' ')}</p>
+                    <p>Output: {operation.io.outputs.join(', ').replaceAll('-', ' ')}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+
             <WorkflowCanvas />
           </div>
         </div>

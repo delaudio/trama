@@ -2,48 +2,16 @@ import type { Connection, Edge, Node } from '@xyflow/react'
 import type {
   WorkflowDataType,
   WorkflowNodeData,
-  WorkflowNodeIo,
-  WorkflowNodeKind,
 } from '../../types/project'
+import { getWorkflowIoForNodeKind } from '../fal/fal-operations.ts'
 
 type ConnectionValidationResult = {
   isValid: boolean
   reason?: string
 }
 
-const workflowNodeIo: Record<WorkflowNodeKind, WorkflowNodeIo> = {
-  prompt: {
-    inputs: [],
-    outputs: ['prompt-text'],
-  },
-  'reference-image': {
-    inputs: [],
-    outputs: ['reference-image'],
-  },
-  'remove-background': {
-    inputs: ['reference-image'],
-    outputs: ['cutout-image'],
-  },
-  'generate-scene': {
-    inputs: ['prompt-text'],
-    outputs: ['scene-image'],
-  },
-  'place-product': {
-    inputs: ['scene-image', 'cutout-image'],
-    outputs: ['composite-image'],
-  },
-  upscale: {
-    inputs: ['composite-image'],
-    outputs: ['upscaled-image'],
-  },
-  export: {
-    inputs: ['upscaled-image'],
-    outputs: ['export-ready-image'],
-  },
-}
-
-export function getWorkflowNodeIo(kind: WorkflowNodeKind): WorkflowNodeIo {
-  return workflowNodeIo[kind]
+export function getWorkflowNodeIo(kind: WorkflowNodeData['kind']) {
+  return getWorkflowIoForNodeKind(kind)
 }
 
 export function validateWorkflowConnection({

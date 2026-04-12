@@ -7,13 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node --test --experimental-strip-types --experimental-specifier-resolution=node src/lib/project-repository.test.ts src/lib/fal-config.test.ts src/features/workflow/workflow-io.test.ts",
+    "test": "node --test --experimental-strip-types --experimental-specifier-resolution=node src/lib/project-repository.test.ts src/lib/fal-config.test.ts src/features/workflow/workflow-io.test.ts src/features/fal/fal-operations.test.ts src/features/fal/fal-client.test.ts",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.7.0",
     "@tauri-apps/api": "^2.8.0",
     "@xyflow/react": "^12.9.3",
     "react": "^19.2.4",
