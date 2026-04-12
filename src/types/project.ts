@@ -26,9 +26,51 @@ export type WorkflowNodeData = {
   description: string
 }
 
+export type WorkflowNodeRunStatus =
+  | 'idle'
+  | 'pending'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+
+export type WorkflowRunStatus =
+  | 'idle'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+
 export type WorkflowNodeIo = {
   inputs: WorkflowDataType[]
   outputs: WorkflowDataType[]
+}
+
+export type WorkflowArtifact = {
+  type: WorkflowDataType
+  value: string
+}
+
+export type WorkflowNodeRunState = {
+  nodeId: string
+  label: string
+  status: WorkflowNodeRunStatus
+  outputCount: number
+  errorMessage: string
+}
+
+export type RuntimeOutputItem = {
+  id: string
+  nodeId: string
+  title: string
+  note: string
+  previewUrl: string
+}
+
+export type WorkflowRunState = {
+  status: WorkflowRunStatus
+  executionOrder: string[]
+  nodeStates: Record<string, WorkflowNodeRunState>
+  outputs: RuntimeOutputItem[]
+  errorMessage: string
 }
 
 export type MoodboardItem = {

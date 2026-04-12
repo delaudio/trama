@@ -15,18 +15,30 @@ import {
 import { getWorkflowNodeIo } from './workflow-io'
 import { getFalOperationForNodeKind } from '../fal/fal-operations'
 import { useProjectsStore } from '../../store/projects-store'
-import type { WorkflowNodeData } from '../../types/project'
+import type { WorkflowNodeData, WorkflowNodeRunState } from '../../types/project'
 
-function WorkflowNode({ data }: NodeProps<Node<WorkflowNodeData>>) {
+type WorkflowCanvasNodeData = WorkflowNodeData & {
+  runtimeState?: WorkflowNodeRunState
+}
+
+function WorkflowNode({ data }: NodeProps<Node<WorkflowCanvasNodeData>>) {
   const nodeIo = getWorkflowNodeIo(data.kind)
   const falOperation = getFalOperationForNodeKind(data.kind)
+  const runtimeStatus = data.runtimeState?.status ?? 'idle'
 
   return (
-    <div className="flow-node">
+    <div className={`flow-node is-${runtimeStatus}`}>
       <Handle className="flow-node-handle" type="target" position={Position.Left} />
       <p className="panel-label">{falOperation ? 'Fal operation' : data.kind.replace('-', ' ')}</p>
       <h4>{data.label}</h4>
       <p>{data.description}</p>
+      {data.runtimeState && runtimeStatus !== 'idle' ? (
+        <div className={`flow-node-status is-${runtimeStatus}`}>
+          <strong>{formatRuntimeStatus(runtimeStatus)}</strong>
+          {data.runtimeState.errorMessage ? <span>{data.runtimeState.errorMessage}</span> : null}
+          {data.runtimeState.outputCount ? <span>{data.runtimeState.outputCount} output</span> : null}
+        </div>
+      ) : null}
       {falOperation ? (
         <div className="flow-node-operation">
           <strong>{falOperation.label}</strong>
@@ -59,11 +71,20 @@ export function WorkflowCanvas() {
   const connectNodes = useProjectsStore((state) => state.connectNodes)
   const setViewport = useProjectsStore((state) => state.setViewport)
   const workflowMessage = useProjectsStore((state) => state.workflowMessage)
+  const workflowRun = useProjectsStore((state) => state.workflowRun)
   const clearWorkflowMessage = useProjectsStore((state) => state.clearWorkflowMessage)
 
   if (!activeProject) {
     return null
   }
+
+  const nodes = activeProject.graph.nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      runtimeState: workflowRun.nodeStates[node.id],
+    },
+  }))
 
   function handleNodeChanges(changes: NodeChange<Node<WorkflowNodeData>>[]) {
     applyNodeChanges(changes)
@@ -94,7 +115,7 @@ export function WorkflowCanvas() {
 
       <ReactFlow
         key={activeProject.id}
-        nodes={activeProject.graph.nodes}
+        nodes={nodes}
         edges={activeProject.graph.edges}
         nodeTypes={nodeTypes}
         defaultViewport={activeProject.graph.viewport}
@@ -121,4 +142,19 @@ export function WorkflowCanvas() {
       </ReactFlow>
     </div>
   )
+}
+
+function formatRuntimeStatus(status: WorkflowNodeRunState['status']) {
+  switch (status) {
+    case 'pending':
+      return 'Pending'
+    case 'running':
+      return 'Running'
+    case 'succeeded':
+      return 'Succeeded'
+    case 'failed':
+      return 'Failed'
+    default:
+      return 'Idle'
+  }
 }

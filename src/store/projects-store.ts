@@ -10,12 +10,18 @@ import {
   type Viewport,
 } from '@xyflow/react'
 import { validateWorkflowConnection } from '../features/workflow/workflow-io'
+import {
+  createIdleWorkflowRunState,
+  executeWorkflow,
+} from '../features/workflow/workflow-runtime'
 import { projectRepository } from '../lib/project-repository'
 import type {
   MoodboardItem,
   Project,
   ProjectSummary,
+  WorkflowNodeRunState,
   WorkflowNodeData,
+  WorkflowRunState,
 } from '../types/project'
 
 type ProjectsState = {
@@ -27,12 +33,14 @@ type ProjectsState = {
   isDirty: boolean
   errorMessage: string
   workflowMessage: string
+  workflowRun: WorkflowRunState
   loadProjects: () => Promise<void>
   setActiveProject: (projectId: string) => Promise<void>
   createProject: (name: string) => Promise<void>
   saveActiveProject: () => Promise<void>
   renameActiveProject: (name: string) => Promise<void>
   deleteActiveProject: () => Promise<void>
+  runActiveWorkflow: () => Promise<void>
   importMoodboardImages: (files: File[]) => Promise<void>
   updateMoodboardItem: (itemId: string, patch: Pick<MoodboardItem, 'title' | 'note'>) => Promise<void>
   deleteMoodboardItem: (itemId: string) => Promise<void>
@@ -52,6 +60,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   isDirty: false,
   errorMessage: '',
   workflowMessage: '',
+  workflowRun: createIdleWorkflowRunState(),
   async loadProjects() {
     set({ isLoading: true, errorMessage: '', workflowMessage: '' })
 
@@ -68,6 +77,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject,
         isLoading: false,
         isDirty: false,
+        workflowRun: createIdleWorkflowRunState(),
       })
     } catch (error) {
       set({
@@ -90,6 +100,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject,
         isLoading: false,
         isDirty: false,
+        workflowRun: createIdleWorkflowRunState(),
       })
     } catch (error) {
       set({
@@ -111,6 +122,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject,
         isLoading: false,
         isDirty: false,
+        workflowRun: createIdleWorkflowRunState(),
       })
     } catch (error) {
       set({
@@ -192,6 +204,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject,
         isLoading: false,
         isDirty: false,
+        workflowRun: createIdleWorkflowRunState(),
       })
     } catch (error) {
       set({
@@ -282,6 +295,76 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         isSaving: false,
         errorMessage: getErrorMessage(error),
       })
+    }
+  },
+  async runActiveWorkflow() {
+    const activeProject = get().activeProject
+
+    if (!activeProject) {
+      return
+    }
+
+    const initialNodeStates = Object.fromEntries(
+      activeProject.graph.nodes.map((node) => [
+        node.id,
+        {
+          nodeId: node.id,
+          label: node.data.label,
+          status: 'pending',
+          outputCount: 0,
+          errorMessage: '',
+        } satisfies WorkflowNodeRunState,
+      ]),
+    )
+
+    set({
+      workflowMessage: '',
+      errorMessage: '',
+      workflowRun: {
+        status: 'running',
+        executionOrder: [],
+        nodeStates: initialNodeStates,
+        outputs: [],
+        errorMessage: '',
+      },
+    })
+
+    try {
+      const result = await executeWorkflow(activeProject, {
+        onNodeStateChange(nodeState) {
+          set((state) => ({
+            workflowRun: {
+              ...state.workflowRun,
+              nodeStates: {
+                ...state.workflowRun.nodeStates,
+                [nodeState.nodeId]: nodeState,
+              },
+            },
+          }))
+        },
+      })
+
+      set((state) => ({
+        workflowMessage: result.outputs.length
+          ? `Workflow completed. ${result.outputs.length} output${result.outputs.length > 1 ? 's' : ''} ready for review.`
+          : 'Workflow completed.',
+        workflowRun: {
+          ...state.workflowRun,
+          status: 'succeeded',
+          executionOrder: result.executionOrder,
+          outputs: result.outputs,
+          errorMessage: '',
+        },
+      }))
+    } catch (error) {
+      set((state) => ({
+        workflowMessage: getErrorMessage(error),
+        workflowRun: {
+          ...state.workflowRun,
+          status: 'failed',
+          errorMessage: getErrorMessage(error),
+        },
+      }))
     }
   },
   applyNodeChanges(changes) {

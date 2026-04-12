@@ -20,9 +20,11 @@ export function WorkspaceShell() {
   const isSaving = useProjectsStore((state) => state.isSaving)
   const isDirty = useProjectsStore((state) => state.isDirty)
   const errorMessage = useProjectsStore((state) => state.errorMessage)
+  const workflowRun = useProjectsStore((state) => state.workflowRun)
   const saveActiveProject = useProjectsStore((state) => state.saveActiveProject)
   const renameActiveProject = useProjectsStore((state) => state.renameActiveProject)
   const deleteActiveProject = useProjectsStore((state) => state.deleteActiveProject)
+  const runActiveWorkflow = useProjectsStore((state) => state.runActiveWorkflow)
   const importMoodboardImages = useProjectsStore((state) => state.importMoodboardImages)
   const updateMoodboardItem = useProjectsStore((state) => state.updateMoodboardItem)
   const deleteMoodboardItem = useProjectsStore((state) => state.deleteMoodboardItem)
@@ -141,6 +143,8 @@ export function WorkspaceShell() {
     if (!falConfig.hasApiKey) {
       return
     }
+
+    void runActiveWorkflow()
   }
 
   if (!activeProject) {
@@ -165,6 +169,14 @@ export function WorkspaceShell() {
       </section>
     )
   }
+
+  const displayedOutputs = workflowRun.outputs.length
+    ? workflowRun.outputs
+    : activeProject.outputs.map((item) => ({
+        ...item,
+        previewUrl: '',
+        nodeId: item.id,
+      }))
 
   return (
     <section className="workspace-shell">
@@ -226,10 +238,14 @@ export function WorkspaceShell() {
           <button
             className="primary-button"
             type="button"
-            disabled={!falConfig.hasApiKey}
+            disabled={!falConfig.hasApiKey || workflowRun.status === 'running'}
             onClick={handleRunWorkflow}
           >
-            {falConfig.hasApiKey ? 'Run workflow' : 'API key required'}
+            {falConfig.hasApiKey
+              ? workflowRun.status === 'running'
+                ? 'Running...'
+                : 'Run workflow'
+              : 'API key required'}
           </button>
         </div>
       </header>
@@ -429,9 +445,17 @@ export function WorkspaceShell() {
             </div>
 
             <div className="output-list">
-              {activeProject.outputs.map((item) => (
+              {displayedOutputs.map((item) => (
                 <article key={item.id} className="output-card">
-                  <div className="output-preview" />
+                  {item.previewUrl ? (
+                    <img
+                      className="output-preview output-preview-image"
+                      src={toPreviewSrc(item.previewUrl)}
+                      alt={item.title}
+                    />
+                  ) : (
+                    <div className="output-preview" />
+                  )}
                   <div className="output-copy">
                     <strong>{item.title}</strong>
                     <p>{item.note}</p>
@@ -452,6 +476,10 @@ function toPreviewSrc(path: string) {
   }
 
   if (path.startsWith('data:')) {
+    return path
+  }
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
     return path
   }
 
