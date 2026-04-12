@@ -556,6 +556,19 @@ button:disabled {
   box-shadow: 0 10px 24px rgba(69, 44, 22, 0.12);
 }
 
+.flow-node.is-running {
+  border-color: rgba(184, 122, 42, 0.4);
+  box-shadow: 0 12px 30px rgba(184, 122, 42, 0.18);
+}
+
+.flow-node.is-succeeded {
+  border-color: rgba(88, 139, 83, 0.34);
+}
+
+.flow-node.is-failed {
+  border-color: rgba(157, 47, 27, 0.34);
+}
+
 .flow-node-handle {
   width: 10px;
   height: 10px;
@@ -600,6 +613,41 @@ button:disabled {
   color: rgba(77, 48, 24, 0.82);
   font-size: 0.78rem;
   line-height: 1.35;
+}
+
+.flow-node-status {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.8rem;
+  font-size: 0.75rem;
+}
+
+.flow-node-status strong {
+  font-size: 0.78rem;
+}
+
+.flow-node-status span {
+  color: inherit;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.flow-node-status.is-pending,
+.flow-node-status.is-running {
+  background: rgba(184, 122, 42, 0.12);
+  color: #87541e;
+}
+
+.flow-node-status.is-succeeded {
+  background: rgba(88, 139, 83, 0.12);
+  color: #456e37;
+}
+
+.flow-node-status.is-failed {
+  background: rgba(157, 47, 27, 0.12);
+  color: #8a2414;
 }
 
 .flow-node-io-group {
@@ -797,6 +845,11 @@ button:disabled {
   overflow: hidden;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.78);
+}
+
+.output-preview-image {
+  display: block;
+  object-fit: cover;
 }
 
 .output-card:first-child .output-preview {
