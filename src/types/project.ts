@@ -84,8 +84,12 @@ export type MoodboardItem = {
 
 export type OutputItem = {
   id: string
+  sourceNodeId: string
+  filename: string
+  path: string
   title: string
   note: string
+  createdAt: string
 }
 
 export type ProjectSummary = {

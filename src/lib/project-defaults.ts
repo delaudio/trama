@@ -125,18 +125,7 @@ export function createDefaultProject(
         createdAt: timestamp,
       },
     ],
-    outputs: [
-      {
-        id: 'out-01',
-        title: 'Campaign still 01',
-        note: 'Most balanced lighting and product placement.',
-      },
-      {
-        id: 'out-02',
-        title: 'Campaign still 02',
-        note: 'More dramatic contrast, less suitable for print.',
-      },
-    ],
+    outputs: [],
   }
 }
 

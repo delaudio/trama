@@ -847,6 +847,43 @@ button:disabled {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.output-card-button {
+  padding: 0;
+  border: 1px solid transparent;
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.output-card-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.output-card-button.is-active {
+  border-color: rgba(142, 77, 34, 0.28);
+  background: rgba(255, 252, 247, 0.92);
+}
+
+.output-card-button.is-disabled {
+  opacity: 0.72;
+}
+
+.output-empty-state {
+  margin-top: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(82, 55, 33, 0.08);
+}
+
+.output-empty-state p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
 .output-preview-image {
   display: block;
   object-fit: cover;
