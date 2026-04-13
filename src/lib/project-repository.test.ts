@@ -157,3 +157,24 @@ test('web repository stores and exports workflow outputs', async () => {
     Reflect.deleteProperty(globalThis, 'document')
   }
 })
+
+test('web repository reopens the Beauty Campaign starter project with seeded template content', async () => {
+  const created = await webProjectRepository.createProject('Starter Reopen')
+  const reopened = await webProjectRepository.loadProject(created.id)
+
+  assert.equal(reopened.template, 'beauty-campaign')
+  assert.equal(reopened.outputs.length, 0)
+  assert.equal(reopened.moodboard.length, 4)
+  assert.deepEqual(
+    reopened.graph.nodes.map((node) => node.data.label),
+    [
+      'Campaign Brief',
+      'Packshot Reference',
+      'Prepare Cutout',
+      'Build Scene',
+      'Compose Hero Still',
+      'Final Review Render',
+    ],
+  )
+  assert.match(reopened.graph.nodes[0]?.data.description ?? '', /premium skincare hero shot/i)
+})

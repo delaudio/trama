@@ -8,8 +8,9 @@ const defaultNodes: Node<WorkflowNodeData>[] = [
     position: { x: 60, y: 90 },
     data: {
       kind: 'prompt',
-      label: 'Prompt',
-      description: 'Campaign intent, color direction, skin finish.',
+      label: 'Campaign Brief',
+      description:
+        'Premium skincare hero shot with soft golden light, creamy neutrals, clean pack focus, and an editorial beauty finish.',
     },
   },
   {
@@ -18,8 +19,8 @@ const defaultNodes: Node<WorkflowNodeData>[] = [
     position: { x: 60, y: 260 },
     data: {
       kind: 'reference-image',
-      label: 'Reference Image',
-      description: 'Bottle shot and art-direction reference.',
+      label: 'Packshot Reference',
+      description: 'Use one product packshot or detail crop from the moodboard as the source image.',
     },
   },
   {
@@ -28,8 +29,8 @@ const defaultNodes: Node<WorkflowNodeData>[] = [
     position: { x: 360, y: 260 },
     data: {
       kind: 'remove-background',
-      label: 'Remove Background',
-      description: 'Prepare cutout for placement and cleanup.',
+      label: 'Prepare Cutout',
+      description: 'Clean the product from its background so it can drop into the final composition.',
     },
   },
   {
@@ -38,8 +39,8 @@ const defaultNodes: Node<WorkflowNodeData>[] = [
     position: { x: 360, y: 90 },
     data: {
       kind: 'generate-scene',
-      label: 'Generate Scene',
-      description: 'Warm studio set with cosmetic campaign lighting.',
+      label: 'Build Scene',
+      description: 'Generate a warm studio set with premium skincare lighting and room for the product hero.',
     },
   },
   {
@@ -48,8 +49,8 @@ const defaultNodes: Node<WorkflowNodeData>[] = [
     position: { x: 680, y: 170 },
     data: {
       kind: 'place-product',
-      label: 'Place Product',
-      description: 'Merge product and scene into a campaign still.',
+      label: 'Compose Hero Still',
+      description: 'Place the cutout into the generated set and keep shadows, scale, and reflections believable.',
     },
   },
   {
@@ -58,8 +59,8 @@ const defaultNodes: Node<WorkflowNodeData>[] = [
     position: { x: 980, y: 170 },
     data: {
       kind: 'upscale',
-      label: 'Upscale',
-      description: 'Prepare the selected output for review.',
+      label: 'Final Review Render',
+      description: 'Upscale the selected still so it is ready for review, export, and client signoff.',
     },
   },
 ]
@@ -96,32 +97,32 @@ export function createDefaultProject(
         id: 'mb-soft-light',
         filename: 'soft-skin-light.jpg',
         path: '',
-        title: 'Soft skin light',
-        note: 'Neutral warmth, diffusion, elegant glow on cheekbones.',
+        title: 'Skin light reference',
+        note: 'Soft golden diffusion, premium skincare glow, and low-contrast highlight rolloff.',
         createdAt: timestamp,
       },
       {
         id: 'mb-bottle-angle',
         filename: 'bottle-angle.jpg',
         path: '',
-        title: 'Bottle angle',
-        note: 'Slight top-left view with strong shadow discipline.',
+        title: 'Primary packshot',
+        note: 'Use this slot for the cleanest bottle angle or cropped product hero.',
         createdAt: timestamp,
       },
       {
         id: 'mb-gold-cream',
         filename: 'gold-and-cream.jpg',
         path: '',
-        title: 'Gold and cream',
-        note: 'Good palette for premium but soft campaign visuals.',
+        title: 'Palette direction',
+        note: 'Cream, champagne, sand, and warm gold cues for the first scene pass.',
         createdAt: timestamp,
       },
       {
         id: 'mb-charcoal-contrast',
         filename: 'contrast-note.jpg',
         path: '',
-        title: 'Contrast note',
-        note: 'Useful accent for typography and pack contrast.',
+        title: 'Contrast accent',
+        note: 'Optional darker accent to keep typography and pack edges readable.',
         createdAt: timestamp,
       },
     ],
