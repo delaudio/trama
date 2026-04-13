@@ -195,12 +195,47 @@ export function WorkspaceShell() {
   }
 
   const displayedOutputs = activeProject.outputs
+  const hasImportedMoodboard = activeProject.moodboard.some((item) => Boolean(item.path))
   const selectedOutputIdsInProject = selectedOutputIds.filter((outputId) =>
     displayedOutputs.some((item) => item.id === outputId),
   )
   const hasExportableSelection = displayedOutputs.some(
     (item) => selectedOutputIdsInProject.includes(item.id) && Boolean(item.path),
   )
+  const starterChecklist = [
+    {
+      id: 'api-key',
+      title: 'Add the Fal API key',
+      detail: falConfig.hasApiKey
+        ? 'The local .env key is loaded and the workflow can call Fal.'
+        : 'Add VITE_FAL_API_KEY to the local .env file to unlock Run workflow.',
+      status: falConfig.hasApiKey ? 'done' : 'current',
+    },
+    {
+      id: 'moodboard',
+      title: 'Import the product packshot',
+      detail: hasImportedMoodboard
+        ? 'At least one reference image is available for the starter flow.'
+        : 'Use Add images to import the cleanest packshot or detail crop into the moodboard.',
+      status: hasImportedMoodboard ? 'done' : falConfig.hasApiKey ? 'current' : 'upcoming',
+    },
+    {
+      id: 'run',
+      title: 'Run the starter workflow',
+      detail: displayedOutputs.length
+        ? `${displayedOutputs.length} generated output${displayedOutputs.length > 1 ? 's are' : ' is'} ready for review.`
+        : 'Keep the default graph, then run it to generate the first Beauty Campaign still.',
+      status: displayedOutputs.length ? 'done' : falConfig.hasApiKey && hasImportedMoodboard ? 'current' : 'upcoming',
+    },
+    {
+      id: 'export',
+      title: 'Review and export the best still',
+      detail: displayedOutputs.length
+        ? 'Select one or more outputs in the right panel and export them to Desktop or Downloads.'
+        : 'After the first run, outputs will appear on the right ready for export.',
+      status: displayedOutputs.length ? 'current' : 'upcoming',
+    },
+  ] as const
 
   return (
     <section className="workspace-shell">
@@ -308,31 +343,55 @@ export function WorkspaceShell() {
 
       <div className="workspace-grid">
         <div className="canvas-column">
+          <section className="starter-guide">
+            <div className="section-title-row">
+              <div>
+                <p className="eyebrow">First run guide</p>
+                <h3>Beauty Campaign starter</h3>
+              </div>
+              <p className="starter-guide-summary">
+                Keep the default graph, swap in your packshot, and use the first pass as the review baseline.
+              </p>
+            </div>
+
+            <div className="starter-guide-grid">
+              {starterChecklist.map((step, index) => (
+                <article key={step.id} className={`starter-step is-${step.status}`}>
+                  <span className="starter-step-index">0{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{step.detail}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <div className="overview-grid">
             <article className="panel-card">
               <p className="meta-label">Template</p>
               <strong>Beauty Campaign</strong>
-              <p>{isDirty ? 'Workflow has unsaved changes.' : 'Opinionated image-first flow for product visuals.'}</p>
+              <p>{isDirty ? 'Starter graph has unsaved edits.' : 'Opinionated image-first flow for premium product stills.'}</p>
             </article>
             <article className="panel-card">
               <p className="meta-label">Moodboard</p>
               <strong>{activeProject.moodboard.length}</strong>
-              <p>References kept with the workflow instead of separate folders.</p>
+              <p>Reference notes stay with the project, not in a separate folder or brief doc.</p>
             </article>
             <article className="panel-card">
               <p className="meta-label">Outputs</p>
               <strong>{activeProject.outputs.length}</strong>
-              <p>Selected generated assets ready for review and export.</p>
+              <p>Each run saves local stills that can be reopened, reviewed, and exported later.</p>
             </article>
           </div>
 
           <div className="flow-panel">
             <div className="operations-panel">
               <div className="section-title-row">
-                <div>
-                  <p className="eyebrow">Curated AI operations</p>
-                  <h3>Beauty Campaign modules</h3>
-                </div>
+              <div>
+                <p className="eyebrow">Curated AI operations</p>
+                <h3>Starter workflow modules</h3>
+              </div>
               </div>
 
               <div className="operations-grid">
@@ -356,7 +415,7 @@ export function WorkspaceShell() {
             <div className="section-title-row">
               <div>
                 <p className="eyebrow">Moodboard</p>
-                <h3>References linked to the project</h3>
+                <h3>Starter references and packshots</h3>
               </div>
               <label className="ghost-button file-trigger">
                 Add images
@@ -427,7 +486,7 @@ export function WorkspaceShell() {
             ) : (
               <div className="moodboard-empty-state">
                 <p className="eyebrow">No references yet</p>
-                <p>Import one or more images to build the project moodboard.</p>
+                <p>Import a clean packshot first, then add lighting or palette references if needed.</p>
               </div>
             )}
 
@@ -461,7 +520,7 @@ export function WorkspaceShell() {
             <div className="panel-header">
               <div>
                 <p className="eyebrow">Outputs</p>
-                <h3>Latest generated stills</h3>
+                <h3>Review-ready stills</h3>
               </div>
               <button
                 className="ghost-button"
@@ -502,7 +561,7 @@ export function WorkspaceShell() {
             ) : (
               <div className="output-empty-state">
                 <p className="eyebrow">No outputs yet</p>
-                <p>Run the workflow to generate local stills for review and export.</p>
+                <p>The first run will save local stills here so you can reopen the project and export later.</p>
               </div>
             )}
           </section>

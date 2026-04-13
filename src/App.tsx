@@ -52,7 +52,7 @@ function App() {
         <SettingsPanel />
 
         <div className="app-meta">
-          <span>Beauty Campaign first</span>
+          <span>Beauty Campaign starter</span>
           <span>v{appVersion}</span>
         </div>
       </aside>

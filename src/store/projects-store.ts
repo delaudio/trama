@@ -124,6 +124,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         activeProject,
         isLoading: false,
         isDirty: false,
+        workflowMessage: 'Starter project ready. Import a product reference and run the workflow when you are ready.',
         workflowRun: createIdleWorkflowRunState(),
       })
     } catch (error) {
@@ -150,6 +151,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         projects,
         isSaving: false,
         isDirty: false,
+        workflowMessage: 'Project saved locally.',
       })
     } catch (error) {
       set({
@@ -175,6 +177,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         projects,
         isSaving: false,
         isDirty: false,
+        workflowMessage: `Project renamed to ${activeProject.name}.`,
       })
     } catch (error) {
       set({
@@ -232,6 +235,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         projects,
         isSaving: false,
         isDirty: false,
+        workflowMessage: `Added ${files.length} image${files.length > 1 ? 's' : ''} to the moodboard.`,
       })
     } catch (error) {
       set({
@@ -266,6 +270,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         projects,
         isSaving: false,
         isDirty: false,
+        workflowMessage: 'Moodboard details saved.',
       })
     } catch (error) {
       set({
@@ -291,6 +296,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         projects,
         isSaving: false,
         isDirty: false,
+        workflowMessage: 'Moodboard image removed.',
       })
     } catch (error) {
       set({

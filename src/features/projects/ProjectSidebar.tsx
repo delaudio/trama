@@ -76,7 +76,7 @@ export function ProjectSidebar({ storageNote }: ProjectSidebarProps) {
       <div className="projects-toolbar">
         <div>
           <p className="eyebrow">Projects</p>
-          <h2>Workspace list</h2>
+          <h2>Project library</h2>
         </div>
         <button
           className="ghost-button"
@@ -118,8 +118,8 @@ export function ProjectSidebar({ storageNote }: ProjectSidebarProps) {
       {!projects.length && !isLoading ? (
         <div className="project-empty-state">
           <p className="eyebrow">No projects yet</p>
-          <h3>Start with one local workspace.</h3>
-          <p>Create a project to keep workflow, references, and outputs in the same folder.</p>
+          <h3>Start from the Beauty Campaign starter.</h3>
+          <p>Create one local project to keep the brief, references, workflow, and exports together.</p>
           <button className="primary-button" type="button" onClick={handleOpenCreateForm}>
             Create first project
           </button>

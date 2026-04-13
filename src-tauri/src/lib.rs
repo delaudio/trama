@@ -400,8 +400,8 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                     position: GraphPosition { x: 60.0, y: 90.0 },
                     data: WorkflowNodeData {
                         kind: "prompt".into(),
-                        label: "Prompt".into(),
-                        description: "Campaign intent, color direction, skin finish.".into(),
+                        label: "Campaign Brief".into(),
+                        description: "Premium skincare hero shot with soft golden light, creamy neutrals, clean pack focus, and an editorial beauty finish.".into(),
                     },
                 },
                 WorkflowNode {
@@ -410,8 +410,8 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                     position: GraphPosition { x: 60.0, y: 260.0 },
                     data: WorkflowNodeData {
                         kind: "reference-image".into(),
-                        label: "Reference Image".into(),
-                        description: "Bottle shot and art-direction reference.".into(),
+                        label: "Packshot Reference".into(),
+                        description: "Use one product packshot or detail crop from the moodboard as the source image.".into(),
                     },
                 },
                 WorkflowNode {
@@ -420,8 +420,8 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                     position: GraphPosition { x: 360.0, y: 260.0 },
                     data: WorkflowNodeData {
                         kind: "remove-background".into(),
-                        label: "Remove Background".into(),
-                        description: "Prepare cutout for placement and cleanup.".into(),
+                        label: "Prepare Cutout".into(),
+                        description: "Clean the product from its background so it can drop into the final composition.".into(),
                     },
                 },
                 WorkflowNode {
@@ -430,8 +430,8 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                     position: GraphPosition { x: 360.0, y: 90.0 },
                     data: WorkflowNodeData {
                         kind: "generate-scene".into(),
-                        label: "Generate Scene".into(),
-                        description: "Warm studio set with cosmetic campaign lighting.".into(),
+                        label: "Build Scene".into(),
+                        description: "Generate a warm studio set with premium skincare lighting and room for the product hero.".into(),
                     },
                 },
                 WorkflowNode {
@@ -440,8 +440,8 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                     position: GraphPosition { x: 680.0, y: 170.0 },
                     data: WorkflowNodeData {
                         kind: "place-product".into(),
-                        label: "Place Product".into(),
-                        description: "Merge product and scene into a campaign still.".into(),
+                        label: "Compose Hero Still".into(),
+                        description: "Place the cutout into the generated set and keep shadows, scale, and reflections believable.".into(),
                     },
                 },
                 WorkflowNode {
@@ -450,8 +450,8 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                     position: GraphPosition { x: 980.0, y: 170.0 },
                     data: WorkflowNodeData {
                         kind: "upscale".into(),
-                        label: "Upscale".into(),
-                        description: "Prepare the selected output for review.".into(),
+                        label: "Final Review Render".into(),
+                        description: "Upscale the selected still so it is ready for review, export, and client signoff.".into(),
                     },
                 },
             ],
@@ -493,32 +493,32 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                 id: "mb-soft-light".into(),
                 filename: "soft-skin-light.jpg".into(),
                 path: String::new(),
-                title: "Soft skin light".into(),
-                note: "Neutral warmth, diffusion, elegant glow on cheekbones.".into(),
+                title: "Skin light reference".into(),
+                note: "Soft golden diffusion, premium skincare glow, and low-contrast highlight rolloff.".into(),
                 created_at: now.clone(),
             },
             MoodboardItem {
                 id: "mb-bottle-angle".into(),
                 filename: "bottle-angle.jpg".into(),
                 path: String::new(),
-                title: "Bottle angle".into(),
-                note: "Slight top-left view with strong shadow discipline.".into(),
+                title: "Primary packshot".into(),
+                note: "Use this slot for the cleanest bottle angle or cropped product hero.".into(),
                 created_at: now.clone(),
             },
             MoodboardItem {
                 id: "mb-gold-cream".into(),
                 filename: "gold-and-cream.jpg".into(),
                 path: String::new(),
-                title: "Gold and cream".into(),
-                note: "Good palette for premium but soft campaign visuals.".into(),
+                title: "Palette direction".into(),
+                note: "Cream, champagne, sand, and warm gold cues for the first scene pass.".into(),
                 created_at: now.clone(),
             },
             MoodboardItem {
                 id: "mb-charcoal-contrast".into(),
                 filename: "contrast-note.jpg".into(),
                 path: String::new(),
-                title: "Contrast note".into(),
-                note: "Useful accent for typography and pack contrast.".into(),
+                title: "Contrast accent".into(),
+                note: "Optional darker accent to keep typography and pack edges readable.".into(),
                 created_at: now,
             },
         ],
@@ -832,6 +832,27 @@ mod tests {
 
         assert!(deleted.moodboard.is_empty());
         assert!(!image_path.exists());
+    }
+
+    #[test]
+    fn default_project_reopens_with_starter_content_intact() {
+        let workspace = TestWorkspace::new();
+        let projects_dir = workspace.projects_dir();
+        let project = create_default_project("Starter Reopen", "beauty-campaign");
+
+        write_project_at(&projects_dir, &project).expect("write starter project");
+
+        let reopened = read_project_at(&projects_dir, &project.id).expect("read starter project");
+
+        assert_eq!(reopened.template, "beauty-campaign");
+        assert_eq!(reopened.outputs.len(), 0);
+        assert_eq!(reopened.moodboard.len(), 4);
+        assert_eq!(reopened.graph.nodes[0].data.label, "Campaign Brief");
+        assert!(reopened.graph.nodes[0]
+            .data
+            .description
+            .contains("Premium skincare hero shot"));
+        assert_eq!(reopened.graph.nodes[5].data.label, "Final Review Render");
     }
 }
 
