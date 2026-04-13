@@ -111,3 +111,49 @@ test('web repository imports, updates, and deletes moodboard images', async () =
 
   assert.equal(deleted.moodboard.some((item) => item.id === updated.moodboard[0].id), false)
 })
+
+test('web repository stores and exports workflow outputs', async () => {
+  const created = await webProjectRepository.createProject('Outputs Check')
+  const clickedDownloads: string[] = []
+
+  Object.defineProperty(globalThis, 'document', {
+    value: {
+      body: {
+        append() {},
+      },
+      createElement() {
+        return {
+          href: '',
+          download: '',
+          click() {
+            clickedDownloads.push(this.download)
+          },
+          remove() {},
+        }
+      },
+    },
+    configurable: true,
+  })
+
+  try {
+    const stored = await webProjectRepository.storeWorkflowOutputs(created.id, [
+      {
+        id: 'runtime-output',
+        nodeId: 'upscale',
+        title: 'Upscale result 1',
+        note: 'Generated from workflow run',
+        previewUrl: 'data:image/png;base64,dGVzdA==',
+      },
+    ])
+
+    assert.equal(stored.outputs.length, 1)
+    assert.equal(stored.outputs[0]?.sourceNodeId, 'upscale')
+    assert.match(stored.outputs[0]?.path ?? '', /^data:image\/png;base64,/)
+
+    const exported = await webProjectRepository.exportOutputs(created.id, [stored.outputs[0].id])
+    assert.equal(exported.length, 1)
+    assert.equal(clickedDownloads.length, 1)
+  } finally {
+    Reflect.deleteProperty(globalThis, 'document')
+  }
+})

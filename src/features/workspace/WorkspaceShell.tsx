@@ -5,7 +5,7 @@ import { listFalOperations } from '../fal/fal-operations'
 import { falConfig } from '../../lib/fal-config'
 import { useProjectsStore } from '../../store/projects-store'
 import { WorkflowCanvas } from '../workflow/WorkflowCanvas'
-import type { MoodboardItem } from '../../types/project'
+import type { MoodboardItem, OutputItem } from '../../types/project'
 
 const falOperations = listFalOperations()
 
@@ -25,6 +25,7 @@ export function WorkspaceShell() {
   const renameActiveProject = useProjectsStore((state) => state.renameActiveProject)
   const deleteActiveProject = useProjectsStore((state) => state.deleteActiveProject)
   const runActiveWorkflow = useProjectsStore((state) => state.runActiveWorkflow)
+  const exportProjectOutputs = useProjectsStore((state) => state.exportProjectOutputs)
   const importMoodboardImages = useProjectsStore((state) => state.importMoodboardImages)
   const updateMoodboardItem = useProjectsStore((state) => state.updateMoodboardItem)
   const deleteMoodboardItem = useProjectsStore((state) => state.deleteMoodboardItem)
@@ -32,6 +33,7 @@ export function WorkspaceShell() {
   const [selectedMoodboardItemId, setSelectedMoodboardItemId] = useState('')
   const [moodboardTitle, setMoodboardTitle] = useState('')
   const [moodboardNote, setMoodboardNote] = useState('')
+  const [selectedOutputIds, setSelectedOutputIds] = useState<string[]>([])
 
   const selectedMoodboardItem = (() => {
     if (!activeProject?.moodboard.length) {
@@ -147,6 +149,28 @@ export function WorkspaceShell() {
     void runActiveWorkflow()
   }
 
+  function handleToggleOutput(item: OutputItem) {
+    if (!item.path) {
+      return
+    }
+
+    setSelectedOutputIds((current) =>
+      current.includes(item.id)
+        ? current.filter((outputId) => outputId !== item.id)
+        : [...current, item.id],
+    )
+  }
+
+  async function handleExportOutputs() {
+    if (!selectedOutputIds.length) {
+      return
+    }
+
+    await exportProjectOutputs(selectedOutputIds.filter((outputId) =>
+      activeProject?.outputs.some((item) => item.id === outputId),
+    ))
+  }
+
   if (!activeProject) {
     return (
       <section className="workspace-shell">
@@ -170,13 +194,13 @@ export function WorkspaceShell() {
     )
   }
 
-  const displayedOutputs = workflowRun.outputs.length
-    ? workflowRun.outputs
-    : activeProject.outputs.map((item) => ({
-        ...item,
-        previewUrl: '',
-        nodeId: item.id,
-      }))
+  const displayedOutputs = activeProject.outputs
+  const selectedOutputIdsInProject = selectedOutputIds.filter((outputId) =>
+    displayedOutputs.some((item) => item.id === outputId),
+  )
+  const hasExportableSelection = displayedOutputs.some(
+    (item) => selectedOutputIdsInProject.includes(item.id) && Boolean(item.path),
+  )
 
   return (
     <section className="workspace-shell">
@@ -439,30 +463,48 @@ export function WorkspaceShell() {
                 <p className="eyebrow">Outputs</p>
                 <h3>Latest generated stills</h3>
               </div>
-              <button className="ghost-button" type="button">
-                Export
+              <button
+                className="ghost-button"
+                type="button"
+                disabled={!hasExportableSelection || isSaving}
+                onClick={() => void handleExportOutputs()}
+              >
+                {isSaving ? 'Exporting...' : hasExportableSelection ? 'Export selected' : 'Select outputs'}
               </button>
             </div>
 
-            <div className="output-list">
-              {displayedOutputs.map((item) => (
-                <article key={item.id} className="output-card">
-                  {item.previewUrl ? (
-                    <img
-                      className="output-preview output-preview-image"
-                      src={toPreviewSrc(item.previewUrl)}
-                      alt={item.title}
-                    />
-                  ) : (
-                    <div className="output-preview" />
-                  )}
-                  <div className="output-copy">
-                    <strong>{item.title}</strong>
-                    <p>{item.note}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+            {displayedOutputs.length ? (
+              <div className="output-list">
+                {displayedOutputs.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`output-card output-card-button ${selectedOutputIdsInProject.includes(item.id) ? 'is-active' : ''} ${item.path ? '' : 'is-disabled'}`}
+                    type="button"
+                    disabled={!item.path}
+                    onClick={() => handleToggleOutput(item)}
+                  >
+                    {item.path ? (
+                      <img
+                        className="output-preview output-preview-image"
+                        src={toPreviewSrc(item.path)}
+                        alt={item.title}
+                      />
+                    ) : (
+                      <div className="output-preview" />
+                    )}
+                    <div className="output-copy">
+                      <strong>{item.title}</strong>
+                      <p>{item.note}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="output-empty-state">
+                <p className="eyebrow">No outputs yet</p>
+                <p>Run the workflow to generate local stills for review and export.</p>
+              </div>
+            )}
           </section>
         </div>
       </div>

@@ -82,8 +82,22 @@ struct MoodboardItem {
 #[serde(rename_all = "camelCase")]
 struct OutputItem {
     id: String,
+    source_node_id: String,
+    filename: String,
+    path: String,
     title: String,
     note: String,
+    created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct RuntimeOutputItem {
+    id: String,
+    node_id: String,
+    title: String,
+    note: String,
+    preview_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -277,6 +291,84 @@ fn delete_moodboard_item(
     Ok(project)
 }
 
+#[tauri::command]
+fn store_workflow_outputs(
+    project_id: String,
+    outputs: Vec<RuntimeOutputItem>,
+) -> Result<ProjectRecord, String> {
+    let mut project = read_project(&project_id)?;
+    let outputs_dir = project_dir(&project_id)?.join("outputs");
+    fs::create_dir_all(&outputs_dir).map_err(|error| error.to_string())?;
+
+    let mut stored_outputs = Vec::with_capacity(outputs.len());
+
+    for output in outputs {
+        if output.preview_url.trim().is_empty() {
+            continue;
+        }
+
+        let extension = output_extension(&output.preview_url);
+        let filename = format!("{}{}", unique_suffix(), extension);
+        let stored_path = outputs_dir.join(&filename);
+        let bytes = read_output_source(&output.preview_url)?;
+
+        fs::write(&stored_path, bytes).map_err(|error| error.to_string())?;
+
+        stored_outputs.push(OutputItem {
+            id: format!("out-{}", unique_suffix()),
+            source_node_id: output.node_id,
+            filename,
+            path: stored_path.display().to_string(),
+            title: output.title,
+            note: output.note,
+            created_at: iso_now(),
+        });
+    }
+
+    let existing_outputs: Vec<OutputItem> = project
+        .outputs
+        .into_iter()
+        .filter(|item| !item.path.is_empty())
+        .collect();
+    stored_outputs.extend(existing_outputs);
+    project.outputs = stored_outputs;
+    project.updated_at = iso_now();
+    write_project(&project)?;
+    Ok(project)
+}
+
+#[tauri::command]
+fn export_output_files(project_id: String, output_ids: Vec<String>) -> Result<Vec<String>, String> {
+    let project = read_project(&project_id)?;
+    let export_dir = dirs::desktop_dir()
+        .or_else(dirs::download_dir)
+        .ok_or("Unable to resolve Desktop or Downloads directory")?;
+    fs::create_dir_all(&export_dir).map_err(|error| error.to_string())?;
+
+    let mut exported_paths = Vec::new();
+
+    for item in project
+        .outputs
+        .iter()
+        .filter(|item| output_ids.iter().any(|output_id| output_id == &item.id))
+    {
+        if item.path.is_empty() {
+            continue;
+        }
+
+        let source_path = PathBuf::from(&item.path);
+        if !source_path.exists() {
+            continue;
+        }
+
+        let destination = export_destination(&export_dir, &item.filename);
+        fs::copy(&source_path, &destination).map_err(|error| error.to_string())?;
+        exported_paths.push(destination.display().to_string());
+    }
+
+    Ok(exported_paths)
+}
+
 fn read_all_projects() -> Result<Vec<ProjectRecord>, String> {
     read_all_projects_at(&projects_dir()?)
 }
@@ -430,18 +522,7 @@ fn create_default_project(name: &str, template: &str) -> ProjectRecord {
                 created_at: now,
             },
         ],
-        outputs: vec![
-            OutputItem {
-                id: "out-01".into(),
-                title: "Campaign still 01".into(),
-                note: "Most balanced lighting and product placement.".into(),
-            },
-            OutputItem {
-                id: "out-02".into(),
-                title: "Campaign still 02".into(),
-                note: "More dramatic contrast, less suitable for print.".into(),
-            },
-        ],
+        outputs: vec![],
     }
 }
 
@@ -464,6 +545,55 @@ fn project_dir(project_id: &str) -> Result<PathBuf, String> {
 
 fn project_file(project_id: &str) -> Result<PathBuf, String> {
     Ok(project_file_at(&projects_dir()?, project_id))
+}
+
+fn output_extension(source: &str) -> String {
+    if source.starts_with("data:image/png") {
+        return ".png".into();
+    }
+
+    if source.starts_with("data:image/jpeg") {
+        return ".jpg".into();
+    }
+
+    let clean_source = source.split('?').next().unwrap_or(source);
+    Path::new(clean_source)
+        .extension()
+        .map(|extension| format!(".{}", extension.to_string_lossy()))
+        .unwrap_or_else(|| ".png".into())
+}
+
+fn read_output_source(source: &str) -> Result<Vec<u8>, String> {
+    if source.starts_with("data:") {
+        return decode_data_url(source);
+    }
+
+    if source.starts_with("http://") || source.starts_with("https://") {
+        let response = reqwest::blocking::get(source).map_err(|error| error.to_string())?;
+        let bytes = response.bytes().map_err(|error| error.to_string())?;
+        return Ok(bytes.to_vec());
+    }
+
+    fs::read(source).map_err(|error| error.to_string())
+}
+
+fn export_destination(export_dir: &Path, filename: &str) -> PathBuf {
+    let candidate = export_dir.join(filename);
+
+    if !candidate.exists() {
+        return candidate;
+    }
+
+    let stem = Path::new(filename)
+        .file_stem()
+        .map(|value| value.to_string_lossy().to_string())
+        .unwrap_or_else(|| "output".into());
+    let extension = Path::new(filename)
+        .extension()
+        .map(|value| format!(".{}", value.to_string_lossy()))
+        .unwrap_or_default();
+
+    export_dir.join(format!("{}-{}{}", stem, unique_suffix(), extension))
 }
 
 fn read_all_projects_at(projects_dir: &Path) -> Result<Vec<ProjectRecord>, String> {
@@ -747,7 +877,9 @@ pub fn run() {
             delete_project,
             import_moodboard_images,
             update_moodboard_item,
-            delete_moodboard_item
+            delete_moodboard_item,
+            store_workflow_outputs,
+            export_output_files
         ])
         .run(tauri::generate_context!())
         .expect("error while running trama application");

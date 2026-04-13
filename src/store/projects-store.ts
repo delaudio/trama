@@ -19,6 +19,7 @@ import type {
   MoodboardItem,
   Project,
   ProjectSummary,
+  RuntimeOutputItem,
   WorkflowNodeRunState,
   WorkflowNodeData,
   WorkflowRunState,
@@ -41,6 +42,7 @@ type ProjectsState = {
   renameActiveProject: (name: string) => Promise<void>
   deleteActiveProject: () => Promise<void>
   runActiveWorkflow: () => Promise<void>
+  exportProjectOutputs: (outputIds: string[]) => Promise<void>
   importMoodboardImages: (files: File[]) => Promise<void>
   updateMoodboardItem: (itemId: string, patch: Pick<MoodboardItem, 'title' | 'note'>) => Promise<void>
   deleteMoodboardItem: (itemId: string) => Promise<void>
@@ -343,16 +345,20 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           }))
         },
       })
+      const nextProject = await projectRepository.storeWorkflowOutputs(activeProject.id, result.outputs)
+      const projects = await projectRepository.listProjects()
 
       set((state) => ({
         workflowMessage: result.outputs.length
           ? `Workflow completed. ${result.outputs.length} output${result.outputs.length > 1 ? 's' : ''} ready for review.`
           : 'Workflow completed.',
+        activeProject: nextProject,
+        projects,
         workflowRun: {
           ...state.workflowRun,
           status: 'succeeded',
           executionOrder: result.executionOrder,
-          outputs: result.outputs,
+          outputs: nextProject.outputs.map(toRuntimeOutputItem),
           errorMessage: '',
         },
       }))
@@ -365,6 +371,30 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           errorMessage: getErrorMessage(error),
         },
       }))
+    }
+  },
+  async exportProjectOutputs(outputIds) {
+    const activeProjectId = get().activeProjectId
+
+    if (!activeProjectId || !outputIds.length) {
+      return
+    }
+
+    set({ isSaving: true, errorMessage: '' })
+
+    try {
+      const exportedPaths = await projectRepository.exportOutputs(activeProjectId, outputIds)
+      set({
+        isSaving: false,
+        workflowMessage: exportedPaths.length
+          ? `Exported ${exportedPaths.length} output${exportedPaths.length > 1 ? 's' : ''}.`
+          : 'No outputs exported.',
+      })
+    } catch (error) {
+      set({
+        isSaving: false,
+        errorMessage: getErrorMessage(error),
+      })
     }
   },
   applyNodeChanges(changes) {
@@ -489,4 +519,14 @@ function getErrorMessage(error: unknown) {
   }
 
   return 'Unexpected project error'
+}
+
+function toRuntimeOutputItem(output: Project['outputs'][number]): RuntimeOutputItem {
+  return {
+    id: output.id,
+    nodeId: output.sourceNodeId,
+    title: output.title,
+    note: output.note,
+    previewUrl: output.path,
+  }
 }

@@ -5,6 +5,7 @@ import type {
   MoodboardItem,
   Project,
   ProjectSummary,
+  RuntimeOutputItem,
   WorkflowTemplate,
 } from '../types/project.ts'
 
@@ -20,6 +21,8 @@ type ProjectRepository = {
   importMoodboardImages: (projectId: string, files: File[]) => Promise<Project>
   updateMoodboardItem: (projectId: string, item: MoodboardItem) => Promise<Project>
   deleteMoodboardItem: (projectId: string, moodboardItemId: string) => Promise<Project>
+  storeWorkflowOutputs: (projectId: string, outputs: RuntimeOutputItem[]) => Promise<Project>
+  exportOutputs: (projectId: string, outputIds: string[]) => Promise<string[]>
 }
 
 const webRepository: ProjectRepository = {
@@ -141,6 +144,53 @@ const webRepository: ProjectRepository = {
     saveWebProjects(projects)
     return projects[index]
   },
+  async storeWorkflowOutputs(projectId, outputs) {
+    const projects = loadWebProjects()
+    const index = projects.findIndex((project) => project.id === projectId)
+
+    if (index < 0) {
+      throw new Error(`Project ${projectId} not found`)
+    }
+
+    const storedOutputs = outputs.map((output) => {
+      const extension = outputFileExtension(output.previewUrl)
+
+      return {
+        id: createOutputId(),
+        sourceNodeId: output.nodeId,
+        filename: `${createOutputId()}${extension}`,
+        path: output.previewUrl,
+        title: output.title,
+        note: output.note,
+        createdAt: new Date().toISOString(),
+      }
+    })
+
+    const existingOutputs = projects[index].outputs.filter((item) => Boolean(item.path))
+    projects[index] = withProjectMetadata({
+      ...projects[index],
+      outputs: [...storedOutputs, ...existingOutputs],
+    })
+
+    saveWebProjects(projects)
+    return projects[index]
+  },
+  async exportOutputs(projectId, outputIds) {
+    const project = await this.loadProject(projectId)
+    const items = project.outputs.filter((item) => outputIds.includes(item.id))
+    const exportedNames: string[] = []
+
+    for (const item of items) {
+      if (!item.path) {
+        continue
+      }
+
+      await downloadWebOutput(item.path, item.filename || `${slugify(item.title)}.png`)
+      exportedNames.push(item.filename)
+    }
+
+    return exportedNames
+  },
 }
 
 const tauriRepository: ProjectRepository = {
@@ -161,6 +211,10 @@ const tauriRepository: ProjectRepository = {
     invoke<Project>('update_moodboard_item', { projectId, item }),
   deleteMoodboardItem: (projectId, moodboardItemId) =>
     invoke<Project>('delete_moodboard_item', { projectId, moodboardItemId }),
+  storeWorkflowOutputs: (projectId, outputs) =>
+    invoke<Project>('store_workflow_outputs', { projectId, outputs }),
+  exportOutputs: (projectId, outputIds) =>
+    invoke<string[]>('export_output_files', { projectId, outputIds }),
 }
 
 export const webProjectRepository = webRepository
@@ -240,4 +294,51 @@ async function readFileAsDataUrl(file: File): Promise<string> {
 
 function createItemId() {
   return `mb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function createOutputId() {
+  return `out-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function outputFileExtension(value: string) {
+  if (value.startsWith('data:image/png')) {
+    return '.png'
+  }
+
+  if (value.startsWith('data:image/jpeg')) {
+    return '.jpg'
+  }
+
+  const cleanValue = value.split('?')[0] ?? value
+  const extensionMatch = cleanValue.match(/\.[a-z0-9]+$/i)
+  return extensionMatch?.[0] ?? '.png'
+}
+
+async function downloadWebOutput(path: string, filename: string) {
+  const anchor = document.createElement('a')
+  anchor.download = filename
+
+  if (path.startsWith('data:')) {
+    anchor.href = path
+  } else {
+    const response = await fetch(path)
+    const blob = await response.blob()
+    anchor.href = URL.createObjectURL(blob)
+  }
+
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+
+  if (anchor.href.startsWith('blob:')) {
+    URL.revokeObjectURL(anchor.href)
+  }
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
